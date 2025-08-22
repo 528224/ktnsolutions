@@ -102,7 +102,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       if (_imagePath != null && !_imagePath!.startsWith('http')) {
         imageUrl = await _storageService.uploadFile(
           _imagePath!,
-          'recognitions/${DateTime.now().millisecondsSinceEpoch}',
+          'recognitions',
         );
       }
 
