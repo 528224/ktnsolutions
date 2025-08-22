@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:ktnsolutions/services/storage_service.dart';
+import 'dart:io';
 
 class AddEditRecognitionScreen extends StatefulWidget {
   final Recognition? recognition;
@@ -54,11 +55,30 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
 
   Future<void> _pickImage() async {
     try {
-      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        setState(() {
-          _imagePath = pickedFile.path;
-        });
+      final ImageSource? source = await showDialog<ImageSource>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Image Source'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, ImageSource.camera),
+              child: const Text('Camera'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, ImageSource.gallery),
+              child: const Text('Gallery'),
+            ),
+          ],
+        ),
+      );
+
+      if (source != null) {
+        final pickedFile = await _picker.pickImage(source: source);
+        if (pickedFile != null) {
+          setState(() {
+            _imagePath = pickedFile.path;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
@@ -180,8 +200,8 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                   )
-                                : Image.asset(
-                                    _imagePath!,
+                                : Image.file(
+                                    File(_imagePath!),
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                   ),
