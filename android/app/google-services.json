@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "895904029591",
+    "project_id": "ktnsolutions-51d13",
+    "storage_bucket": "ktnsolutions-51d13.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895904029591:android:7cf761f128b9c0af8542d2",
+        "android_client_info": {
+          "package_name": "com.ktnsolutions.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9nCIc9OIftVslw-xl8cmd6aUNdGa3N7Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
