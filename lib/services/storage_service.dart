@@ -1,32 +1,36 @@
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as path;
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
 class StorageService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<String> uploadFile(String filePath, String storagePath) async {
+  Future<String> uploadFile(String filePath, String directoryName) async {
     try {
-      final File file = File(filePath);
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}${path.extension(filePath)}';
-      final String fullPath = '$storagePath/$fileName';
-      
-      final Reference storageRef = _storage.ref().child(fullPath);
-      final UploadTask uploadTask = storageRef.putFile(file);
-      final TaskSnapshot snapshot = await uploadTask;
-      
-      return await snapshot.ref.getDownloadURL();
+      if (filePath.isEmpty) return "";
+      final extension = ".png";
+      File file = File(filePath);
+      var fileName = '${DateTime
+          .now()
+          .millisecondsSinceEpoch}';
+      final ref = firebase_storage.FirebaseStorage.instance
+          .ref()
+          .child(directoryName)
+          .child('$fileName$extension'); // Fixed extra bracket
+
+      await ref.putFile(file);
+      return await ref.getDownloadURL();
     } catch (e) {
-      throw Exception('Error uploading file: $e');
+      print("Error uploading files: $e");
+      return "";
     }
   }
 
   Future<void> deleteFile(String fileUrl) async {
     try {
-      final Reference ref = _storage.refFromURL(fileUrl);
+      final ref = firebase_storage.FirebaseStorage.instance.refFromURL(fileUrl);
       await ref.delete();
     } catch (e) {
       throw Exception('Error deleting file: $e');
     }
   }
+
 }

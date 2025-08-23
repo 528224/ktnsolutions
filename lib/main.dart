@@ -19,7 +19,14 @@ Future<void> main() async {
   
   // Initialize dependencies
   await Dependencies().init();
-  
+  final isWeb = identical(0, 0.0); // Platform detection for web
+  if (isWeb){
+    var currentFirebaseAuthUser = FirebaseAuth.instance.currentUser;
+    if (currentFirebaseAuthUser?.uid == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+  }
+
   runApp(const MyApp());
 }
 

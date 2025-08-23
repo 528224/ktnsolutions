@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
+import 'package:octo_image/octo_image.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -152,27 +153,7 @@ class WebRecognitionsScreen extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
-      child: CachedNetworkImage(
-        imageUrl: recognition.imageUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        placeholder: (context, url) => Container(
-          color: Colors.grey[200],
-          child: const Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        errorWidget: (context, url, error) => Container(
-          color: Colors.grey[200],
-          child: const Center(
-            child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
-          ),
-        ),
-        // httpHeaders: const {
-        //   'Accept': 'image/*',
-        // },
-      ),
+      child: getRemoteImageForWeb(recognition.imageUrl,),
     );
   }
 
@@ -184,4 +165,21 @@ class WebRecognitionsScreen extends StatelessWidget {
       );
     }
   }
+}
+
+getRemoteImageForWeb(String url) {
+  return OctoImage(
+    image: NetworkImage(url),
+    progressIndicatorBuilder: (context, progress) {
+      double? value;
+      var expectedBytes = progress?.expectedTotalBytes;
+      if (progress != null && expectedBytes != null) {
+        value = progress.cumulativeBytesLoaded / expectedBytes;
+      }
+      return Center(child: CircularProgressIndicator(value: value));
+    },
+    errorBuilder: (context, error, stacktrace) {
+      return Icon(Icons.error);
+      },
+  );
 }
