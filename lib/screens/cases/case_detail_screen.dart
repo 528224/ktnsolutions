@@ -35,8 +35,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     super.dispose();
   }
 
-  void _loadCase() => setState(() => _caseFuture = _caseService.getCase(widget.caseId));
-  Future<void> _refreshData() async => _loadCase();
+  void _loadCase() {
+    setState(() {
+      _caseFuture = _caseService.getCase(widget.caseId);
+    });
+  }
+
+  Future<void> _refreshData() async {
+    _loadCase();
+  }
 
   @override
   Widget build(BuildContext context) {
