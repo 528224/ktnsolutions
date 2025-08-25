@@ -21,6 +21,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   ];
 
   void _onItemTapped(int index) {
+    if(index != 0) return;//TODO need to implement
     setState(() {
       _selectedIndex = index;
     });
