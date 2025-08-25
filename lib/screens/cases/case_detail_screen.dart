@@ -47,67 +47,69 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Case Details'),
-        actions: [
-          if (_isAdmin)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () async {
-                final legalCase = await _caseFuture;
-                if (legalCase != null) {
-                  final result = await Get.to<bool>(
-                    () => AddEditCaseScreen(legalCase: legalCase),
-                  );
-                  if (result == true) _loadCase();
-                }
-              },
-            ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.info_outline), text: 'Info'),
-            Tab(icon: Icon(Icons.timeline), text: 'Timeline'),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Case Details'),
+          actions: [
+            if (_isAdmin)
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () async {
+                  final legalCase = await _caseFuture;
+                  if (legalCase != null) {
+                    final result = await Get.to<bool>(
+                      () => AddEditCaseScreen(legalCase: legalCase),
+                    );
+                    if (result == true) _loadCase();
+                  }
+                },
+              ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: Icon(Icons.info_outline), text: 'Info'),
+              Tab(icon: Icon(Icons.timeline), text: 'Timeline'),
+            ],
+          ),
         ),
-      ),
-      body: FutureBuilder<LegalCase?>(
-        future: _caseFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        body: FutureBuilder<LegalCase?>(
+          future: _caseFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError || !snapshot.hasData) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Error loading case details'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadCase,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            final legalCase = snapshot.data!;
+            return RefreshIndicator(
+              onRefresh: _refreshData,
+              child: TabBarView(
+                controller: _tabController,
                 children: [
-                  const Text('Error loading case details'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadCase,
-                    child: const Text('Retry'),
-                  ),
+                  CaseInfoTab(legalCase: legalCase),
+                  CaseTimelineTab(legalCase: legalCase),
                 ],
               ),
             );
-          }
-          
-          final legalCase = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: _refreshData,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                CaseInfoTab(legalCase: legalCase),
-                CaseTimelineTab(legalCase: legalCase),
-              ],
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

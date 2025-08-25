@@ -150,146 +150,148 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.recognition == null ? 'Add Recognition' : 'Edit Recognition'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _submitForm,
-            child: _isLoading 
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Image Picker
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(color: Colors.grey[300]!),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.recognition == null ? 'Add Recognition' : 'Edit Recognition'),
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : _submitForm,
+              child: _isLoading 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Image Picker
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8.0),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: _imagePath == null
+                              ? const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_photo_alternate, size: 48, color: Colors.grey),
+                                    SizedBox(height: 8),
+                                    Text('Tap to add image'),
+                                  ],
+                                )
+                              : _imagePath!.startsWith('http')
+                                  ? Image.network(
+                                      _imagePath!,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                    )
+                                  : Image.file(
+                                      File(_imagePath!),
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                    ),
                         ),
-                        child: _imagePath == null
-                            ? const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_photo_alternate, size: 48, color: Colors.grey),
-                                  SizedBox(height: 8),
-                                  Text('Tap to add image'),
-                                ],
+                      ),
+                      const SizedBox(height: 16),
+      
+                      // Title Field
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Title',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a title';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+      
+                      // Description Field
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(),
+                          alignLabelWithHint: true,
+                        ),
+                        maxLines: 4,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a description';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+      
+                      // Publish Date Picker
+                      ListTile(
+                        title: const Text('Publish Date'),
+                        subtitle: Text(
+                          _publishDate != null
+                              ? '${_publishDate!.day}/${_publishDate!.month}/${_publishDate!.year}'
+                              : 'Select date',
+                        ),
+                        trailing: const Icon(Icons.calendar_today),
+                        onTap: _selectDate,
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+      
+                      // Link Field (Optional)
+                      TextFormField(
+                        controller: _linkController,
+                        decoration: const InputDecoration(
+                          labelText: 'Link (Optional)',
+                          border: OutlineInputBorder(),
+                          hintText: 'https://example.com',
+                        ),
+                        keyboardType: TextInputType.url,
+                      ),
+                      const SizedBox(height: 24),
+      
+                      // Save Button
+                      ElevatedButton(
+                        onPressed: _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : _imagePath!.startsWith('http')
-                                ? Image.network(
-                                    _imagePath!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  )
-                                : Image.file(
-                                    File(_imagePath!),
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
+                            : const Text('Save Recognition'),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Title Field
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Description Field
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(),
-                        alignLabelWithHint: true,
-                      ),
-                      maxLines: 4,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Publish Date Picker
-                    ListTile(
-                      title: const Text('Publish Date'),
-                      subtitle: Text(
-                        _publishDate != null
-                            ? '${_publishDate!.day}/${_publishDate!.month}/${_publishDate!.year}'
-                            : 'Select date',
-                      ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: _selectDate,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(4.0),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Link Field (Optional)
-                    TextFormField(
-                      controller: _linkController,
-                      decoration: const InputDecoration(
-                        labelText: 'Link (Optional)',
-                        border: OutlineInputBorder(),
-                        hintText: 'https://example.com',
-                      ),
-                      keyboardType: TextInputType.url,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Save Button
-                    ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Save Recognition'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

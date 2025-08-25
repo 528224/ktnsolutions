@@ -18,43 +18,54 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recognitions'),
-      ),
-      body: StreamBuilder<List<Recognition>>(
-        stream: _recognitionService.getRecognitions(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Recognitions'),
+          elevation: 0,
+        ),
+        body: StreamBuilder<List<Recognition>>(
+            stream: _recognitionService.getRecognitions(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          final recognitions = snapshot.data ?? [];
+              final recognitions = snapshot.data ?? [];
 
-          if (recognitions.isEmpty) {
-            return const Center(child: Text('No recognitions found'));
-          }
+              if (recognitions.isEmpty) {
+                return const Center(child: Text('No recognitions found'));
+              }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
-            itemCount: recognitions.length,
-            itemBuilder: (context, index) {
-              final recognition = recognitions[index];
-              return _buildRecognitionCard(recognition);
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                itemCount: recognitions.length,
+                itemBuilder: (context, index) {
+                  final recognition = recognitions[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: _buildRecognitionCard(recognition),
+                  );
+                },
+              );
             },
-          );
-        },
+        ),
+        floatingActionButton: _isAdmin
+            ? Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: FloatingActionButton(
+                  onPressed: _navigateToAddEditRecognition,
+                  child: const Icon(Icons.add),
+                ),
+              )
+            : null,
       ),
-      floatingActionButton: _isAdmin
-          ? FloatingActionButton(
-              onPressed: () => _navigateToAddEditRecognition(),
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 

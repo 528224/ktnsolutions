@@ -3,7 +3,6 @@ import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:octo_image/octo_image.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class WebRecognitionsScreen extends StatelessWidget {
   final RecognitionService _recognitionService = RecognitionService();
@@ -12,60 +11,62 @@ class WebRecognitionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Our Recognitions'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-      ),
-      body: Container(
-        color: Colors.grey[50],
-        child: StreamBuilder<List<Recognition>>(
-          stream: _recognitionService.getRecognitions(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('Error loading recognitions: ${snapshot.error}'),
-              );
-            }
-
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final recognitions = snapshot.data ?? [];
-
-            if (recognitions.isEmpty) {
-              return const Center(
-                child: Text('No recognitions available at the moment'),
-              );
-            }
-
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 1200 
-                    ? 3 
-                    : constraints.maxWidth > 800 ? 2 : 1;
-                
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
-                    childAspectRatio: 0.8,
-                    mainAxisExtent: 400, // Fixed height for all cards
-                  ),
-                  itemCount: recognitions.length,
-                  itemBuilder: (context, index) {
-                    return _buildRecognitionCard(recognitions[index]);
-                  },
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Our Recognitions'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+        ),
+        body: Container(
+          color: Colors.grey[50],
+          child: StreamBuilder<List<Recognition>>(
+            stream: _recognitionService.getRecognitions(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('Error loading recognitions: ${snapshot.error}'),
                 );
-              },
-            );
-          },
+              }
+      
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+      
+              final recognitions = snapshot.data ?? [];
+      
+              if (recognitions.isEmpty) {
+                return const Center(
+                  child: Text('No recognitions available at the moment'),
+                );
+              }
+      
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = constraints.maxWidth > 1200 
+                      ? 3 
+                      : constraints.maxWidth > 800 ? 2 : 1;
+                  
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16.0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 16.0,
+                      mainAxisSpacing: 16.0,
+                      childAspectRatio: 0.8,
+                      mainAxisExtent: 400, // Fixed height for all cards
+                    ),
+                    itemCount: recognitions.length,
+                    itemBuilder: (context, index) {
+                      return _buildRecognitionCard(recognitions[index]);
+                    },
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
