@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
-import 'package:octo_image/octo_image.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class WebRecognitionsScreen extends StatelessWidget {
@@ -50,7 +49,7 @@ class WebRecognitionsScreen extends StatelessWidget {
                 itemCount: recognitions.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 16.0),
                 itemBuilder: (context, index) {
-                  return _buildRecognitionCard(recognitions[index]);
+                  return _buildRecognitionCard(recognitions[index], context);
                 },
               );
             },
@@ -60,7 +59,7 @@ class WebRecognitionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecognitionCard(Recognition recognition) {
+  Widget _buildRecognitionCard(Recognition recognition, BuildContext context) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -99,43 +98,32 @@ class WebRecognitionsScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(18),
                                 child: Image.network(
                                   recognition.faviconUrl!,
-                                  width: 20,
-                                  height: 20,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => const Icon(
-                                    Icons.public,
-                                    size: 20,
-                                    color: Colors.grey,
-                                  ),
+                                  width: 32,
+                                  height: 32,
+                                  errorBuilder: (context, error, stackTrace) => 
+                                      const Icon(Icons.public, size: 20, color: Colors.grey),
                                 ),
                               )
-                            : const Icon(
-                                Icons.public,
-                                size: 20,
-                                color: Colors.grey,
-                              ),
+                            : const Icon(Icons.public, size: 20, color: Colors.grey),
                       ),
                     ),
-                    
                     const SizedBox(width: 12),
                     
-                    // Domain and URL column
+                    // Source title and URL
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Display Name (formatted domain)
                           if (recognition.sourceTitle != null)
                             Text(
                               recognition.sourceTitle!,
                               style: const TextStyle(
-                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.black87,
+                                fontSize: 14,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          
-                          // Domain URL
                           if (recognition.sourceSubTitle != null)
                             Text(
                               recognition.sourceSubTitle!,
@@ -149,55 +137,83 @@ class WebRecognitionsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
-                    // Date
-                    Text(
-                      recognition.formattedDate,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
               
               // Title
               Text(
                 recognition.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blue[700],
-                  height: 1.3,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               
               // Description
-              Text(
-                recognition.description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                  height: 1.4,
+              if (recognition.description.isNotEmpty)
+                Text(
+                  recognition.description,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
                 ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
               
-              // Image (if available)
-              if (recognition.imageUrl.isNotEmpty) ...[
-                const SizedBox(height: 12),
+              // Image if available
+              if (recognition.imageUrl != null && recognition.imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 16),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4.0),
-                  child: getRemoteImageForWeb(recognition.imageUrl),
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    recognition.imageUrl!,
+                    width: double.infinity,
+                    height: 300,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 300,
+                      color: Colors.grey[100],
+                      child: const Center(
+                        child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                      ),
+                    ),
+                  ),
                 ),
               ],
+              
+              const SizedBox(height: 12),
+              
+              // Date and view source button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    recognition.formattedDate,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  
+                  if (recognition.hasValidLink)
+                    TextButton(
+                      onPressed: () => _launchURL(recognition.link!),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Theme.of(context).primaryColor),
+                        ),
+                      ),
+                      child: const Text('View Source'),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
@@ -213,40 +229,4 @@ class WebRecognitionsScreen extends StatelessWidget {
       );
     }
   }
-}
-
-Widget getRemoteImageForWeb(String url) {
-  return OctoImage(
-    width: double.infinity,
-    height: 200,
-    fit: BoxFit.cover,
-    image: NetworkImage(url),
-    progressIndicatorBuilder: (context, progress) {
-      double? value;
-      var expectedBytes = progress?.expectedTotalBytes;
-      if (progress != null && expectedBytes != null) {
-        value = progress.cumulativeBytesLoaded / expectedBytes;
-      }
-      return Container(
-        height: 200,
-        color: Colors.grey[100],
-        child: Center(
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(value: value),
-          ),
-        ),
-      );
-    },
-    errorBuilder: (context, error, stacktrace) {
-      return Container(
-        height: 200,
-        color: Colors.grey[100],
-        child: const Center(
-          child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
-        ),
-      );
-    },
-  );
 }

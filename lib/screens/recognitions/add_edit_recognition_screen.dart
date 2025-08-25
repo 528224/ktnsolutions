@@ -39,7 +39,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       _titleController.text = widget.recognition!.title;
       _descriptionController.text = widget.recognition!.description;
       _linkController.text = widget.recognition?.link ?? '';
-      _imagePath = widget.recognition!.imageUrl;
+      _imagePath = widget.recognition?.imageUrl;
       _publishDate = widget.recognition!.publishedDate;
     } else {
       _publishDate = DateTime.now();
@@ -105,20 +105,18 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     }
   }
 
-  Future<void> _submitForm() async {
+  Future<void> _saveRecognition() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_imagePath == null || _imagePath!.isEmpty) {
-      Get.snackbar('Error', 'Please select an image');
-      return;
-    }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       String? imageUrl = _imagePath;
       
-      // Upload new image if it's a local file path
-      if (_imagePath != null && !_imagePath!.startsWith('http')) {
+      // Only upload new image if it's a local file path (not a URL)
+      if (_imagePath != null && _imagePath!.startsWith('/')) {
         imageUrl = await _storageService.uploadFile(
           _imagePath!,
           'recognitions',
@@ -129,25 +127,28 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         id: widget.recognition?.id ?? '',
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        imageUrl: imageUrl!,
+        imageUrl: imageUrl,
         link: _linkController.text.trim().isNotEmpty ? _linkController.text.trim() : null,
         publishedDate: _publishDate!,
         createdBy: widget.recognition?.createdBy,
-        createdAt: widget.recognition?.createdAt,
+        createdAt: widget.recognition?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       await _recognitionService.saveRecognition(recognition);
       
-      if (mounted) {
-        Get.back(result: true);
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
     } catch (e) {
-      debugPrint('Error saving recognition: $e');
-      Get.snackbar('Error', 'Failed to save recognition');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving recognition: ${e.toString()}')),
+      );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -258,6 +259,58 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     );
   }
 
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Recognition Image (Optional)',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        if (_imagePath != null) ...[
+          Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _imagePath!.startsWith('http')
+                  ? Image.network(_imagePath!, fit: BoxFit.cover)
+                  : Image.file(File(_imagePath!), fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: _pickImage,
+                child: const Text('Change Image'),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _imagePath = null;
+                  });
+                },
+                child: const Text('Remove Image'),
+              ),
+            ],
+          ),
+        ] else
+          OutlinedButton(
+            onPressed: _pickImage,
+            child: const Text('Add Image'),
+          ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -271,7 +324,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
               tooltip: 'Preview',
             ),
             TextButton(
-              onPressed: _isLoading ? null : _submitForm,
+              onPressed: _isLoading ? null : _saveRecognition,
               child: _isLoading 
                   ? const SizedBox(
                       width: 20,
@@ -293,46 +346,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                     children: [
                       if (_showPreview) _buildPreview(),
                       
-                      // Image Picker
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          height: 200,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8.0),
-                            border: Border.all(
-                              color: Colors.grey[300]!,
-                              width: 1.5,
-                              style: BorderStyle.solid,
-                            ),
-                          ),
-                          child: _imagePath == null
-                              ? const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add_photo_alternate, size: 48, color: Colors.grey),
-                                    SizedBox(height: 8),
-                                    Text('Tap to add image', style: TextStyle(color: Colors.grey)),
-                                  ],
-                                )
-                              : ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: _imagePath!.startsWith('http')
-                                      ? Image.network(
-                                          _imagePath!,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                        )
-                                      : Image.file(
-                                          File(_imagePath!),
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                        ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      _buildImagePicker(),
       
                       // Title Field
                       TextFormField(
@@ -416,7 +430,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       
                       // Save Button
                       ElevatedButton(
-                        onPressed: _submitForm,
+                        onPressed: _saveRecognition,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: Theme.of(context).primaryColor,

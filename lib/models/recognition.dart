@@ -5,7 +5,7 @@ class Recognition {
   final String id;
   final String title;
   final String description;
-  final String imageUrl;
+  final String? imageUrl;
   final String? link;
   final DateTime publishedDate;
   final String? createdBy;
@@ -16,7 +16,7 @@ class Recognition {
     required this.id,
     required this.title,
     required this.description,
-    required this.imageUrl,
+    this.imageUrl,
     this.link,
     required this.publishedDate,
     this.createdBy,
@@ -29,7 +29,7 @@ class Recognition {
     return {
       'title': title,
       'description': description,
-      'imageUrl': imageUrl,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'link': link,
       'publishedDate': Timestamp.fromDate(publishedDate),
       'createdBy': createdBy,
@@ -45,7 +45,7 @@ class Recognition {
       id: doc.id,
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
+      imageUrl: data['imageUrl'],
       link: data['link'],
       publishedDate: (data['publishedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdBy: data['createdBy'],
@@ -238,7 +238,6 @@ class Recognition {
       id: '',
       title: '',
       description: '',
-      imageUrl: '',
       publishedDate: DateTime.now(),
     );
   }

@@ -104,42 +104,33 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                               borderRadius: BorderRadius.circular(18),
                               child: Image.network(
                                 recognition.faviconUrl!,
-                                width: 20,
-                                height: 20,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.public,
-                                  size: 20,
-                                  color: Colors.grey,
-                                ),
+                                width: 32,
+                                height: 32,
+                                errorBuilder: (context, error, stackTrace) => 
+                                    const Icon(Icons.public, size: 20, color: Colors.grey),
                               ),
                             )
-                          : const Icon(
-                              Icons.public,
-                              size: 20,
-                              color: Colors.grey,
-                            ),
+                          : const Icon(Icons.public, size: 20, color: Colors.grey),
                     ),
                   
                   const SizedBox(width: 12),
                   
-                  // Domain and URL column
+                  // Source title and URL
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Display Name (formatted domain)
                         if (recognition.sourceTitle != null)
                           Text(
                             recognition.sourceTitle!,
                             style: const TextStyle(
-                              fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                              fontSize: 14,
+                              color: Colors.blue,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        
-                        // Domain URL
                         if (recognition.sourceSubTitle != null)
                           Text(
                             recognition.sourceSubTitle!,
@@ -154,25 +145,29 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                     ),
                   ),
                   
-                  // Date
-                  Text(
-                    recognition.formattedDate,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                  
-                  // Admin options
-                  if (_isAdmin) ...[
-                    const SizedBox(width: 8),
-                    IconButton(
+                  if (_isAdmin)
+                    PopupMenuButton<String>(
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _navigateToAddEditRecognition(recognition: recognition);
+                        } else if (value == 'delete') {
+                          _showDeleteConfirmation(recognition);
+                        }
+                      },
                       icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      onPressed: () => _showRecognitionOptions(recognition),
                     ),
-                  ],
                 ],
               ),
               
@@ -183,45 +178,74 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                 recognition.title,
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               
               // Description
-              Text(
-                recognition.description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
+              if (recognition.description.isNotEmpty)
+                Text(
+                  recognition.description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[800],
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
               
-              // Image (if available)
-              if (recognition.imageUrl.isNotEmpty) ...[
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              
+              // Image if available
+              if (recognition.imageUrl != null && recognition.imageUrl!.isNotEmpty)
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4.0),
+                  borderRadius: BorderRadius.circular(8.0),
                   child: Image.network(
-                    recognition.imageUrl,
+                    recognition.imageUrl!,
                     width: double.infinity,
-                    height: 140,
+                    height: 180,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
-                      height: 140,
-                      color: Colors.grey[200],
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                      height: 180,
+                      color: Colors.grey[100],
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      ),
                     ),
                   ),
                 ),
-              ],
+              
+              const SizedBox(height: 12),
+              
+              // Date and actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    recognition.formattedDate,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  
+                  if (recognition.hasValidLink)
+                    TextButton(
+                      onPressed: () => launchUrlString(recognition.link!),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('View Source'),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
@@ -229,45 +253,6 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
     );
   }
 
-  String _getDomainFromUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      return '${uri.host}${uri.path.isNotEmpty ? uri.path : ''}';
-    } catch (e) {
-      return url;
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  void _showRecognitionOptions(Recognition recognition) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateToAddEditRecognition(recognition: recognition);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Delete', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Navigator.pop(context);
-              _showDeleteConfirmation(recognition);
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showDeleteConfirmation(Recognition recognition) {
     showDialog(
