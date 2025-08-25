@@ -30,6 +30,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
   String? _imagePath;
   bool _isLoading = false;
   DateTime? _publishDate;
+  bool _showPreview = false;
 
   @override
   void initState() {
@@ -51,6 +52,24 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     _descriptionController.dispose();
     _linkController.dispose();
     super.dispose();
+  }
+
+  bool _isValidUrl(String url) {
+    try {
+      Uri.parse(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  String _getDomainFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return '${uri.host}${uri.path.isNotEmpty ? uri.path : ''}';
+    } catch (e) {
+      return url;
+    }
   }
 
   Future<void> _pickImage() async {
@@ -113,7 +132,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         imageUrl: imageUrl!,
         link: _linkController.text.trim().isNotEmpty ? _linkController.text.trim() : null,
         publishedDate: _publishDate!,
-        createdBy: widget.recognition?.createdBy, // Will be set on the server if null
+        createdBy: widget.recognition?.createdBy,
         createdAt: widget.recognition?.createdAt,
         updatedAt: DateTime.now(),
       );
@@ -148,6 +167,97 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     }
   }
 
+  void _togglePreview() {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _showPreview = !_showPreview;
+      });
+    }
+  }
+
+  Widget _buildPreview() {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (_linkController.text.isNotEmpty) ...[
+                  Expanded(
+                    child: Text(
+                      _getDomainFromUrl(_linkController.text),
+                      style: TextStyle(
+                        color: Colors.green[800],
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                Text(
+                  _publishDate != null 
+                      ? '${_publishDate!.day}/${_publishDate!.month}/${_publishDate!.year}'
+                      : 'No date',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _titleController.text.isNotEmpty 
+                  ? _titleController.text 
+                  : 'Title will appear here',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _descriptionController.text.isNotEmpty
+                  ? _descriptionController.text
+                  : 'Description will appear here',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (_imagePath != null) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4.0),
+                child: _imagePath!.startsWith('http')
+                    ? Image.network(
+                        _imagePath!,
+                        width: double.infinity,
+                        height: 140,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        File(_imagePath!),
+                        width: double.infinity,
+                        height: 140,
+                        fit: BoxFit.cover,
+                      ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -155,6 +265,11 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         appBar: AppBar(
           title: Text(widget.recognition == null ? 'Add Recognition' : 'Edit Recognition'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.visibility),
+              onPressed: _togglePreview,
+              tooltip: 'Preview',
+            ),
             TextButton(
               onPressed: _isLoading ? null : _submitForm,
               child: _isLoading 
@@ -169,22 +284,28 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
+            : Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (_showPreview) _buildPreview(),
+                      
                       // Image Picker
                       GestureDetector(
                         onTap: _pickImage,
                         child: Container(
                           height: 200,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: Colors.grey[100],
                             borderRadius: BorderRadius.circular(8.0),
-                            border: Border.all(color: Colors.grey[300]!),
+                            border: Border.all(
+                              color: Colors.grey[300]!,
+                              width: 1.5,
+                              style: BorderStyle.solid,
+                            ),
                           ),
                           child: _imagePath == null
                               ? const Column(
@@ -192,20 +313,23 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                                   children: [
                                     Icon(Icons.add_photo_alternate, size: 48, color: Colors.grey),
                                     SizedBox(height: 8),
-                                    Text('Tap to add image'),
+                                    Text('Tap to add image', style: TextStyle(color: Colors.grey)),
                                   ],
                                 )
-                              : _imagePath!.startsWith('http')
-                                  ? Image.network(
-                                      _imagePath!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                    )
-                                  : Image.file(
-                                      File(_imagePath!),
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                    ),
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  child: _imagePath!.startsWith('http')
+                                      ? Image.network(
+                                          _imagePath!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                        )
+                                      : Image.file(
+                                          File(_imagePath!),
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                        ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -213,9 +337,11 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                       // Title Field
                       TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Title',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.grey[50],
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -229,10 +355,12 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                       // Description Field
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Description',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                           alignLabelWithHint: true,
+                          filled: true,
+                          fillColor: Colors.grey[50],
                         ),
                         maxLines: 4,
                         validator: (value) {
@@ -245,31 +373,44 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                       const SizedBox(height: 16),
       
                       // Publish Date Picker
-                      ListTile(
-                        title: const Text('Publish Date'),
-                        subtitle: Text(
-                          _publishDate != null
+                      TextFormField(
+                        readOnly: true,
+                        controller: TextEditingController(
+                          text: _publishDate != null
                               ? '${_publishDate!.day}/${_publishDate!.month}/${_publishDate!.year}'
                               : 'Select date',
                         ),
-                        trailing: const Icon(Icons.calendar_today),
-                        onTap: _selectDate,
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(color: Colors.grey[300]!),
-                          borderRadius: BorderRadius.circular(4.0),
+                        decoration: InputDecoration(
+                          labelText: 'Publish Date',
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.calendar_today, size: 20),
+                            onPressed: _selectDate,
+                          ),
                         ),
+                        onTap: _selectDate,
                       ),
                       const SizedBox(height: 16),
       
                       // Link Field (Optional)
                       TextFormField(
                         controller: _linkController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Link (Optional)',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                           hintText: 'https://example.com',
+                          filled: true,
+                          fillColor: Colors.grey[50],
                         ),
                         keyboardType: TextInputType.url,
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty && !_isValidUrl(value)) {
+                            return 'Please enter a valid URL';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 24),
       
@@ -278,12 +419,17 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                         onPressed: _submitForm,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
                         ),
                         child: _isLoading
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text('Save Recognition'),
                       ),

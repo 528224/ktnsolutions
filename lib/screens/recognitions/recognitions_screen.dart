@@ -72,59 +72,153 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
   Widget _buildRecognitionCard(Recognition recognition) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
       child: InkWell(
-        onTap: () {
-          if (recognition.link != null) {
-            launchUrlString(recognition.link!);
-          }
-        },
-        onLongPress: _isAdmin ? () => _showRecognitionOptions(recognition) : null,
+        onTap: recognition.hasValidLink ? () => launchUrlString(recognition.link!) : null,
+        borderRadius: BorderRadius.circular(8.0),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (recognition.imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    recognition.imageUrl,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 200,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image),
+              // Favicon and source info row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Rounded favicon container
+                  if (recognition.hasValidLink)
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: recognition.faviconUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: Image.network(
+                                recognition.faviconUrl!,
+                                width: 20,
+                                height: 20,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.public,
+                                  size: 20,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.public,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
+                    ),
+                  
+                  const SizedBox(width: 12),
+                  
+                  // Domain and URL column
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Display Name (formatted domain)
+                        if (recognition.sourceTitle != null)
+                          Text(
+                            recognition.sourceTitle!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        
+                        // Domain URL
+                        if (recognition.sourceSubTitle != null)
+                          Text(
+                            recognition.sourceSubTitle!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
                   ),
-                ),
+                  
+                  // Date
+                  Text(
+                    recognition.formattedDate,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                  
+                  // Admin options
+                  if (_isAdmin) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _showRecognitionOptions(recognition),
+                    ),
+                  ],
+                ],
+              ),
+              
               const SizedBox(height: 12),
+              
+              // Title
               Text(
                 recognition.title,
-                style: Theme.of(context).textTheme.titleLarge,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.blue,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              
+              const SizedBox(height: 4),
+              
+              // Description
               Text(
                 recognition.description,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Published: ${_formatDate(recognition.publishedDate)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+              
+              // Image (if available)
+              if (recognition.imageUrl.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4.0),
+                  child: Image.network(
+                    recognition.imageUrl,
+                    width: double.infinity,
+                    height: 140,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 140,
+                      color: Colors.grey[200],
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
-              ),
-              if (recognition.link != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Tap to view more',
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    decoration: TextDecoration.underline,
                   ),
                 ),
               ],
@@ -133,6 +227,15 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
         ),
       ),
     );
+  }
+
+  String _getDomainFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return '${uri.host}${uri.path.isNotEmpty ? uri.path : ''}';
+    } catch (e) {
+      return url;
+    }
   }
 
   String _formatDate(DateTime date) {
