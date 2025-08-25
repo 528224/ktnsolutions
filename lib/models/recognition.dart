@@ -84,7 +84,7 @@ class Recognition {
     return DateFormat('dd/MM/yyyy').format(publishedDate);
   }
 
-  // Extract domain from link if available
+  // Extract title/domain from link if available
   String? get sourceTitle {
     if (link == null) return null;
     
@@ -110,6 +110,34 @@ class Recognition {
       return null;
     }
   }
+
+  // Get subtitle/displayURL (formatted for UI)
+  String? get sourceSubTitle {
+    if (link == null) return null;
+
+    try {
+      final uri = Uri.parse(link!);
+
+      // Handle Google redirect URLs
+      if (uri.host == 'www.google.com' && uri.path == '/url') {
+        final urlParam = uri.queryParameters['url'];
+        if (urlParam != null) {
+          try {
+            final decodedUrl = Uri.decodeFull(urlParam);
+            final innerUri = Uri.parse(decodedUrl);
+            return _formatDisplayUrl(innerUri);
+          } catch (e) {
+            // If parsing fails, continue with main domain
+          }
+        }
+      }
+
+      return _formatDisplayUrl(uri);
+    } catch (e) {
+      return null;
+    }
+  }
+
 
   // Get base URL for redirection (without path)
   String? get sourceUrl {
@@ -165,33 +193,6 @@ class Recognition {
     }
   }
 
-  // Get display URL (formatted for UI)
-  String? get sourceSubTitle {
-    if (link == null) return null;
-    
-    try {
-      final uri = Uri.parse(link!);
-      
-      // Handle Google redirect URLs
-      if (uri.host == 'www.google.com' && uri.path == '/url') {
-        final urlParam = uri.queryParameters['url'];
-        if (urlParam != null) {
-          try {
-            final decodedUrl = Uri.decodeFull(urlParam);
-            final innerUri = Uri.parse(decodedUrl);
-            return _formatDisplayUrl(innerUri);
-          } catch (e) {
-            // If parsing fails, continue with main domain
-          }
-        }
-      }
-      
-      return _formatDisplayUrl(uri);
-    } catch (e) {
-      return null;
-    }
-  }
-  
   // Helper method to format display URL
   String _formatDisplayUrl(Uri uri) {
     final scheme = uri.scheme.isNotEmpty ? '${uri.scheme}://' : 'https://';
