@@ -16,6 +16,7 @@ class Recognition {
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<ItemWithLink>? itemsWithLink;
 
   Recognition({
     required this.id,
@@ -30,6 +31,7 @@ class Recognition {
     this.createdBy,
     this.createdAt,
     this.updatedAt,
+    this.itemsWithLink,
   });
 
   // Convert Recognition to JSON
@@ -39,6 +41,7 @@ class Recognition {
       'description': description,
       'titleSubTextColors': titleSubTextColors?.map((e) => e.toSnapShot()).toList(),
       'descSubTextColors': descSubTextColors?.map((e) => e.toSnapShot()).toList(),
+      'itemsWithLink': itemsWithLink?.map((e) => e.toSnapShot()).toList(),
       if (imageUrl != null) 'imageUrl': imageUrl,
       'link': link,
       'publishedDate': Timestamp.fromDate(publishedDate),
@@ -62,6 +65,10 @@ class Recognition {
           [],
       descSubTextColors: (data['descSubTextColors'] as List<dynamic>?)
           ?.map((e) => SubTextColor.fromSnapshot(Map<String, dynamic>.from(e)))
+          .toList() ??
+          [],
+      itemsWithLink: (data['itemsWithLink'] as List<dynamic>?)
+          ?.map((e) => ItemWithLink.fromSnapshot(Map<String, dynamic>.from(e)))
           .toList() ??
           [],
       imageUrl: data['imageUrl'],
@@ -88,6 +95,7 @@ class Recognition {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<ItemWithLink>? itemsWithLink
   }) {
     return Recognition(
       id: id ?? this.id,
@@ -102,6 +110,7 @@ class Recognition {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      itemsWithLink: itemsWithLink ?? this.itemsWithLink
     );
   }
 
@@ -267,5 +276,24 @@ class Recognition {
       publishedDate: DateTime.now(),
       order: 0,
     );
+  }
+}
+
+class ItemWithLink {
+  String name = '';
+  String link = ''; // Store color as hex string like "#FF2196F3"
+
+  ItemWithLink({required this.name, required this.link});
+
+  ItemWithLink.fromSnapshot(Map<String, dynamic> snapshot) {
+    name = snapshot.containsKey("name") ? snapshot["name"] : '';
+    link = snapshot.containsKey("link") ? snapshot["link"] : '';
+  }
+
+  Map<String, dynamic> toSnapShot() {
+    return {
+      "name": name,
+      "link": link,
+    };
   }
 }
