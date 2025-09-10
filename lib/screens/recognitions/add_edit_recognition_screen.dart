@@ -21,6 +21,7 @@ class AddEditRecognitionScreen extends StatefulWidget {
 class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
+  final _orderController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _linkController = TextEditingController();
   final _recognitionService = RecognitionService();
@@ -37,6 +38,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     super.initState();
     if (widget.recognition != null) {
       _titleController.text = widget.recognition!.title;
+      _orderController.text = widget.recognition!.order.toString();
       _descriptionController.text = widget.recognition!.description;
       _linkController.text = widget.recognition?.link ?? '';
       _imagePath = widget.recognition?.imageUrl;
@@ -49,6 +51,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
   @override
   void dispose() {
     _titleController.dispose();
+    _orderController.dispose();
     _descriptionController.dispose();
     _linkController.dispose();
     super.dispose();
@@ -126,6 +129,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       final recognition = Recognition(
         id: widget.recognition?.id ?? '',
         title: _titleController.text.trim(),
+        order: int.tryParse(_orderController.text.trim()) ?? 0,
         description: _descriptionController.text.trim(),
         imageUrl: imageUrl,
         link: _linkController.text.trim().isNotEmpty ? _linkController.text.trim() : null,
@@ -380,6 +384,25 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter a description';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Order Field
+                      TextFormField(
+                        controller: _orderController,
+                        decoration: InputDecoration(
+                          labelText: 'Order',
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter order number';
                           }
                           return null;
                         },
