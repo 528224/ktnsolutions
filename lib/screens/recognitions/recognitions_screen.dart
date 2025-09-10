@@ -87,94 +87,150 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Favicon and source info row
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Rounded favicon container
-                  if (recognition.hasValidLink)
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: recognition.faviconUrl != null
-                          ? ClipRRect(
+              // Source info row with date inline on right (or date top-right when no link)
+              if (recognition.hasValidLink) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left: favicon + titles
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
                               borderRadius: BorderRadius.circular(18),
-                              child: Image.network(
-                                recognition.faviconUrl!,
-                                width: 32,
-                                height: 32,
-                                errorBuilder: (context, error, stackTrace) => 
-                                    const Icon(Icons.public, size: 20, color: Colors.grey),
-                              ),
-                            )
-                          : const Icon(Icons.public, size: 20, color: Colors.grey),
-                    ),
-                  
-                  const SizedBox(width: 12),
-                  
-                  // Source title and URL
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (recognition.sourceTitle != null)
-                          Text(
-                            recognition.sourceTitle!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                              color: Colors.blue,
+                              border: Border.all(color: Colors.grey[300]!),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            child: recognition.faviconUrl != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: Image.network(
+                                      recognition.faviconUrl!,
+                                      width: 32,
+                                      height: 32,
+                                      errorBuilder: (context, error, stackTrace) => 
+                                          const Icon(Icons.public, size: 20, color: Colors.grey),
+                                    ),
+                                  )
+                                : const Icon(Icons.public, size: 20, color: Colors.grey),
                           ),
-                        if (recognition.sourceSubTitle != null)
-                          Text(
-                            recognition.sourceSubTitle!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (recognition.sourceTitle != null)
+                                  Text(
+                                    recognition.sourceTitle!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                if (recognition.sourceSubTitle != null)
+                                  Text(
+                                    recognition.sourceSubTitle!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  
-                  if (_isAdmin)
-                    PopupMenuButton<String>(
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Text('Edit'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Delete', style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _navigateToAddEditRecognition(recognition: recognition);
-                        } else if (value == 'delete') {
-                          _showDeleteConfirmation(recognition);
-                        }
-                      },
-                      icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    const SizedBox(width: 12),
+                    // Right: published date
+                    Text(
+                      recognition.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                ],
-              ),
-              
-              const SizedBox(height: 12),
 
+                    if (_isAdmin)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: PopupMenuButton<String>(
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _navigateToAddEditRecognition(recognition: recognition);
+                            } else if (value == 'delete') {
+                              _showDeleteConfirmation(recognition);
+                            }
+                          },
+                          icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (!recognition.hasValidLink) ...[
+                Row(
+                  children: [
+                    const Spacer(),
+                    Text(
+                      recognition.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    if (_isAdmin)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: PopupMenuButton<String>(
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _navigateToAddEditRecognition(recognition: recognition);
+                            } else if (value == 'delete') {
+                              _showDeleteConfirmation(recognition);
+                            }
+                          },
+                          icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              
               getRunningMultiColorText(recognition.title, isMulticolor: true,
                   isRunning: false, subTextColors: recognition.titleSubTextColors??[],
                   textStyle: const TextStyle(
@@ -193,7 +249,6 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                           color: Colors.grey[800],
                           height: 1.4,),),
 
-              
               const SizedBox(height: 12),
               
               // Image if available
@@ -216,31 +271,25 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                 ),
               
               const SizedBox(height: 12),
-              
-              // Date and actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    recognition.formattedDate,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  
-                  if (recognition.hasValidLink)
-                    TextButton(
-                      onPressed: () => launchUrlString(recognition.link!),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+
+              // Items with Link buttons (bottom of card)
+              if ((recognition.itemsWithLink ?? []).isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final item in recognition.itemsWithLink!)
+                      _ItemLinkButton(
+                        title: (item.name).isNotEmpty ? item.name : 'Open',
+                        url: item.link,
+                        onTap: (item.link).trim().isNotEmpty ? () => launchUrlString(item.link) : null,
                       ),
-                      child: const Text('View Source'),
-                    ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              // Bottom row removed (View Source deleted)
             ],
           ),
         ),
@@ -275,8 +324,31 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
 
   void _navigateToAddEditRecognition({Recognition? recognition}) {
     Get.to(
-      () => AddEditRecognitionScreen(recognition: recognition),
+          () => AddEditRecognitionScreen(recognition: recognition),
       fullscreenDialog: true,
+    );
+  }
+
+}
+
+class _ItemLinkButton extends StatelessWidget {
+  final String title;
+  final String url;
+  final VoidCallback? onTap;
+
+  const _ItemLinkButton({required this.title, required this.url, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.5)),
+      ),
+      icon: const Icon(Icons.link, size: 16),
+      label: Text(title, overflow: TextOverflow.ellipsis),
     );
   }
 }

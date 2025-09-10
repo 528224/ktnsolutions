@@ -100,66 +100,95 @@ class WebRecognitionsScreen extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Rounded favicon container
-                    GestureDetector(
-                      onTap: recognition.sourceUrl != null
-                          ? () => _launchURL(recognition.sourceUrl!)
-                          : null,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: recognition.faviconUrl != null
-                            ? ClipRRect(
+                    // Left: favicon + titles
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap: recognition.sourceUrl != null
+                                ? () => _launchURL(recognition.sourceUrl!)
+                                : null,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
                                 borderRadius: BorderRadius.circular(18),
-                                child: Image.network(
-                                  recognition.faviconUrl!,
-                                  width: 32,
-                                  height: 32,
-                                  errorBuilder: (context, error, stackTrace) => 
-                                      const Icon(Icons.public, size: 20, color: Colors.grey),
-                                ),
-                              )
-                            : const Icon(Icons.public, size: 20, color: Colors.grey),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: recognition.faviconUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: Image.network(
+                                        recognition.faviconUrl!,
+                                        width: 32,
+                                        height: 32,
+                                        errorBuilder: (context, error, stackTrace) => 
+                                            const Icon(Icons.public, size: 20, color: Colors.grey),
+                                      ),
+                                    )
+                                  : const Icon(Icons.public, size: 20, color: Colors.grey),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (recognition.sourceTitle != null)
+                                  Text(
+                                    recognition.sourceTitle!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                if (recognition.sourceSubTitle != null)
+                                  Text(
+                                    recognition.sourceSubTitle!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
-                    // Source title and URL
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (recognition.sourceTitle != null)
-                            Text(
-                              recognition.sourceTitle!,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          if (recognition.sourceSubTitle != null)
-                            Text(
-                              recognition.sourceSubTitle!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
+                    // Right: date
+                    Text(
+                      recognition.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
+              ],
+              if (!recognition.hasValidLink) ...[
+                Row(
+                  children: [
+                    const Spacer(),
+                    Text(
+                      recognition.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
               ],
               
               // Title
@@ -223,33 +252,25 @@ class WebRecognitionsScreen extends StatelessWidget {
               ],
               
               const SizedBox(height: 12),
-              
-              // Date and view source button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    recognition.formattedDate,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  
-                  if (recognition.hasValidLink)
-                    TextButton(
-                      onPressed: () => _launchURL(recognition.link!),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(color: Theme.of(context).primaryColor),
-                        ),
+
+              // Items with Link buttons (bottom of card)
+              if ((recognition.itemsWithLink ?? []).isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final item in recognition.itemsWithLink!)
+                      _ItemLinkButton(
+                        title: (item.name).isNotEmpty ? item.name : 'Open',
+                        url: item.link,
+                        onTap: (item.link).trim().isNotEmpty ? () => _launchURL(item.link) : null,
                       ),
-                      child: const Text('View Source'),
-                    ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              // Bottom row removed (View Source deleted)
             ],
           ),
         ),
@@ -264,5 +285,28 @@ class WebRecognitionsScreen extends StatelessWidget {
         mode: LaunchMode.externalApplication,
       );
     }
+  }
+
+}
+
+class _ItemLinkButton extends StatelessWidget {
+  final String title;
+  final String url;
+  final VoidCallback? onTap;
+
+  const _ItemLinkButton({required this.title, required this.url, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.5)),
+      ),
+      icon: const Icon(Icons.link, size: 16),
+      label: Text(title, overflow: TextOverflow.ellipsis),
+    );
   }
 }

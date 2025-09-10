@@ -37,6 +37,10 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
   DateTime? _publishDate;
   bool _showPreview = false;
 
+  // Controllers for dynamic Items with Link
+  final List<TextEditingController> _itemNameControllers = [];
+  final List<TextEditingController> _itemLinkControllers = [];
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +53,12 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       _linkController.text = widget.recognition?.link ?? '';
       _imagePath = widget.recognition?.imageUrl;
       _publishDate = widget.recognition!.publishedDate;
+
+      // Initialize itemsWithLink controllers from existing data
+      final existingItems = widget.recognition!.itemsWithLink ?? [];
+      for (final item in existingItems) {
+        _addItem(item);
+      }
     } else {
       _publishDate = DateTime.now();
     }
@@ -62,6 +72,13 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     _linkController.dispose();
     _titleColors.close();
     _descColors.close();
+    // Dispose dynamic item controllers
+    for (final c in _itemNameControllers) {
+      c.dispose();
+    }
+    for (final c in _itemLinkControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -81,6 +98,25 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     } catch (e) {
       return url;
     }
+  }
+
+  // Helpers for Items with Link
+  void _addItem([ItemWithLink? item]) {
+    final nameController = TextEditingController(text: item?.name ?? '');
+    final linkController = TextEditingController(text: item?.link ?? '');
+    setState(() {
+      _itemNameControllers.add(nameController);
+      _itemLinkControllers.add(linkController);
+    });
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _itemNameControllers[index].dispose();
+      _itemLinkControllers[index].dispose();
+      _itemNameControllers.removeAt(index);
+      _itemLinkControllers.removeAt(index);
+    });
   }
 
   Future<void> _pickImage() async {
@@ -134,6 +170,16 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         );
       }
 
+      // Build itemsWithLink from controllers (ignore completely empty rows)
+      final List<ItemWithLink> itemsWithLink = [];
+      for (int i = 0; i < _itemNameControllers.length; i++) {
+        final name = _itemNameControllers[i].text.trim();
+        final link = _itemLinkControllers[i].text.trim();
+        if (name.isNotEmpty || link.isNotEmpty) {
+          itemsWithLink.add(ItemWithLink(name: name, link: link));
+        }
+      }
+
       final recognition = Recognition(
         id: widget.recognition?.id ?? '',
         title: _titleController.text.trim(),
@@ -147,6 +193,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         createdBy: widget.recognition?.createdBy,
         createdAt: widget.recognition?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        itemsWithLink: itemsWithLink.isNotEmpty ? itemsWithLink : null,
       );
 
       await _recognitionService.saveRecognition(recognition);
@@ -325,6 +372,92 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     );
   }
 
+  Widget _buildItemsWithLinkSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Items with Link',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add Item',
+              onPressed: () => _addItem(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_itemNameControllers.isEmpty)
+          Text(
+            'Tap + to add items',
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          ),
+        for (int i = 0; i < _itemNameControllers.length; i++) ...[
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Item ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Remove',
+                        onPressed: () => _removeItem(i),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _itemNameControllers[i],
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    validator: (value) {
+                      final name = value?.trim() ?? '';
+                      final link = _itemLinkControllers[i].text.trim();
+                      if (name.isEmpty && link.isEmpty) return null; // allow empty row
+                      if (name.isEmpty) return 'Please enter a name';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _itemLinkControllers[i],
+                    decoration: InputDecoration(
+                      labelText: 'Link (Optional)',
+                      hintText: 'https://example.com',
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType: TextInputType.url,
+                    validator: (value) {
+                      final text = value?.trim() ?? '';
+                      if (text.isEmpty) return null;
+                      if (!_isValidUrl(text)) return 'Please enter a valid URL';
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -368,43 +501,9 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                       _getRichMultiTextEditorForDesc(context),
                       const SizedBox(height: 16),
 
-                      // // Title Field
-                      // TextFormField(
-                      //   controller: _titleController,
-                      //   decoration: InputDecoration(
-                      //     labelText: 'Title',
-                      //     border: const OutlineInputBorder(),
-                      //     filled: true,
-                      //     fillColor: Colors.grey[50],
-                      //   ),
-                      //   validator: (value) {
-                      //     if (value == null || value.trim().isEmpty) {
-                      //       return 'Please enter a title';
-                      //     }
-                      //     return null;
-                      //   },
-                      // ),
-                      // const SizedBox(height: 16),
-                      //
-                      // // Description Field
-                      // TextFormField(
-                      //   controller: _descriptionController,
-                      //   decoration: InputDecoration(
-                      //     labelText: 'Description',
-                      //     border: const OutlineInputBorder(),
-                      //     alignLabelWithHint: true,
-                      //     filled: true,
-                      //     fillColor: Colors.grey[50],
-                      //   ),
-                      //   maxLines: 4,
-                      //   validator: (value) {
-                      //     if (value == null || value.trim().isEmpty) {
-                      //       return 'Please enter a description';
-                      //     }
-                      //     return null;
-                      //   },
-                      // ),
-                      // const SizedBox(height: 16),
+                      // Items with Link Section
+                      _buildItemsWithLinkSection(),
+                      const SizedBox(height: 16),
 
                       // Order Field
                       TextFormField(
