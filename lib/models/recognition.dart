@@ -8,6 +8,7 @@ class Recognition {
   final String? imageUrl;
   final String? link;
   final DateTime publishedDate;
+  final int order;
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -19,6 +20,7 @@ class Recognition {
     this.imageUrl,
     this.link,
     required this.publishedDate,
+    this.order = 0,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -32,6 +34,7 @@ class Recognition {
       if (imageUrl != null) 'imageUrl': imageUrl,
       'link': link,
       'publishedDate': Timestamp.fromDate(publishedDate),
+      'order': order,
       'createdBy': createdBy,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
@@ -48,6 +51,7 @@ class Recognition {
       imageUrl: data['imageUrl'],
       link: data['link'],
       publishedDate: (data['publishedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      order: data['order'] ?? 0,
       createdBy: data['createdBy'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -62,6 +66,7 @@ class Recognition {
     String? imageUrl,
     String? link,
     DateTime? publishedDate,
+    int? order,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -73,6 +78,7 @@ class Recognition {
       imageUrl: imageUrl ?? this.imageUrl,
       link: link ?? this.link,
       publishedDate: publishedDate ?? this.publishedDate,
+      order: order ?? this.order,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -239,6 +245,7 @@ class Recognition {
       title: '',
       description: '',
       publishedDate: DateTime.now(),
+      order: 0,
     );
   }
 }
