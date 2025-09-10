@@ -3,6 +3,8 @@ import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
+import '../../rich_text_with_multiple_color.dart';
+
 class WebRecognitionsScreen extends StatelessWidget {
   final RecognitionService _recognitionService = RecognitionService();
 
@@ -143,28 +145,44 @@ class WebRecognitionsScreen extends StatelessWidget {
               ],
               
               // Title
-              Text(
-                recognition.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-              
+              // Text(
+              //   recognition.title,
+              //   style: const TextStyle(
+              //     fontSize: 18,
+              //     fontWeight: FontWeight.bold,
+              //     color: Colors.blue,
+              //   ),
+              // ),
+              getRunningMultiColorText(recognition.title, isMulticolor: true,
+                  isRunning: false, subTextColors: recognition.titleSubTextColors??[],
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  )),
+
               const SizedBox(height: 8),
               
+              // // Description
+              // if (recognition.description.isNotEmpty)
+              //   Text(
+              //     recognition.description,
+              //     style: const TextStyle(
+              //       fontSize: 15,
+              //       color: Colors.black87,
+              //       height: 1.5,
+              //     ),
+              //   ),
+              //
               // Description
               if (recognition.description.isNotEmpty)
-                Text(
-                  recognition.description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Colors.black87,
-                    height: 1.5,
-                  ),
-                ),
-              
+                getRunningMultiColorText(recognition.description, isMulticolor: true,
+                    isRunning: false, subTextColors: recognition.descSubTextColors??[],
+                  textStyle: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[800],
+                    height: 1.4,),),
+
+
               // Image if available
               if (recognition.imageUrl != null && recognition.imageUrl!.isNotEmpty) ...[
                 const SizedBox(height: 16),

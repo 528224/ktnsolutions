@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ktnsolutions/models/recognition.dart';
+import 'package:ktnsolutions/rich_text_with_multiple_color.dart';
 import 'package:ktnsolutions/screens/recognitions/add_edit_recognition_screen.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -173,32 +174,25 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
               ),
               
               const SizedBox(height: 12),
-              
-              // Title
-              Text(
-                recognition.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+
+              getRunningMultiColorText(recognition.title, isMulticolor: true,
+                  isRunning: false, subTextColors: recognition.titleSubTextColors??[],
+                  textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      )),
               
               const SizedBox(height: 8),
               
               // Description
               if (recognition.description.isNotEmpty)
-                Text(
-                  recognition.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[800],
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                getRunningMultiColorText(recognition.description, isMulticolor: true,
+                    isRunning: false, subTextColors: recognition.descSubTextColors??[],
+                  textStyle: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[800],
+                          height: 1.4,),),
+
               
               const SizedBox(height: 12),
               

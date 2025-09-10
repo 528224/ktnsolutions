@@ -20,11 +20,10 @@ class SubTextColor {
   }
 }
 
-Widget getRunningMultiColorText(String mainText, {bool isMulticolor = true, bool isRunning = true, List<SubTextColor> subTextColors = const []}) {
-  const nonMatchingTextStyle = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-  );
+Widget getRunningMultiColorText(String mainText, {bool isMulticolor = true, bool isRunning = true, List<SubTextColor> subTextColors = const [], TextStyle textStyle = const TextStyle(
+  fontSize: 16,
+  fontWeight: FontWeight.w600,
+) }) {
 
   List<TextSpan> spans = [];
 
@@ -48,36 +47,38 @@ Widget getRunningMultiColorText(String mainText, {bool isMulticolor = true, bool
       }
 
       if (match == null || matchIndex == -1) {
-        spans.add(TextSpan(text: mainText.substring(start), style: nonMatchingTextStyle));
+        spans.add(TextSpan(text: mainText.substring(start), style: textStyle));
         break;
       }
 
       // Add non-matching text
       if (matchIndex > start) {
         spans.add(TextSpan(text: mainText.substring(start, matchIndex),
-            style: nonMatchingTextStyle));
+            style: textStyle));
       }
 
       // Add matching colored text
       spans.add(
         TextSpan(
           text: mainText.substring(matchIndex, matchIndex + match.subText.length),
-          style: nonMatchingTextStyle.copyWith(color: HexColor(match.colorHex))
+          style: textStyle.copyWith(color: HexColor(match.colorHex))
         ),
       );
 
       start = matchIndex + match.subText.length;
     }
   }else{
-    spans.add(TextSpan(text: mainText, style: nonMatchingTextStyle));
+    spans.add(TextSpan(text: mainText, style: textStyle));
   }
 
   if(isRunning){
-    return RichTextMarquee(textSpans: spans, padding: const EdgeInsets.symmetric(horizontal: 0.0), defaultTextStyle: nonMatchingTextStyle,
+    return RichTextMarquee(textSpans: spans,
+      padding: const EdgeInsets.symmetric(horizontal: 0.0),
+      defaultTextStyle: textStyle,
       velocity: RUNNING_TEXT_VELOCITY,);
   }else{
     return Center(child: Text.rich(TextSpan(children: spans),
-      maxLines: 2, // ✅ prevents overflow
+      maxLines: 3, // ✅ prevents overflow
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.center,),
     );
