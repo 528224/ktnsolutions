@@ -27,8 +27,8 @@ class WebRecognitionsScreen extends StatelessWidget {
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child:
-          ListView(
-            children: [
+          SingleChildScrollView(
+            child: Column(children: [
                 AdvocateProfile(
                   name: "Adv. PRABHU K N",
                   designation: "Supreme Court & All High Courts",
@@ -74,6 +74,7 @@ class WebRecognitionsScreen extends StatelessWidget {
                     },
                   ),
               ],)
+          ),
         ),
       ),
     );
