@@ -16,13 +16,13 @@ class WebRecognitionsScreen extends StatelessWidget {
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text('Our Recognitions'),
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
-        ),
+        // appBar: AppBar(
+        //   title: const Text('Our Recognitions'),
+        //   centerTitle: true,
+        //   elevation: 0,
+        //   backgroundColor: Colors.white,
+        //   foregroundColor: Colors.black87,
+        // ),
         body: Container(
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
