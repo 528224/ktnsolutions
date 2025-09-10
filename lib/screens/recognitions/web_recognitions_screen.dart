@@ -64,6 +64,7 @@ class WebRecognitionsScreen extends StatelessWidget {
 
                       return ListView.separated(
                         shrinkWrap: true, // let it fit inside parent ListView
+                        physics: NeverScrollableScrollPhysics(), // Disable inner scrolling
                         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
                         itemCount: recognitions.length,
                         separatorBuilder: (context, index) => const SizedBox(height: 16.0),
