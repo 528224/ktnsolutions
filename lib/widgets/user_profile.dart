@@ -58,30 +58,35 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
   }
 
   Widget _buildPhoneRow(String phone) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        radius: 18,
-        backgroundColor: Colors.green.withOpacity(0.12),
-        child: const Icon(Icons.phone, color: Colors.green),
+      leading: GestureDetector(
+        onTap: (){_copyToClipboard(phone, label: 'Phone');},
+        child: CircleAvatar(
+          radius: isMobile ? 14 : 18,
+          backgroundColor: Colors.green.withOpacity(0.12),
+          child: Icon(Icons.phone, color: Colors.green, size: isMobile ? 16 : 20),
+        ),
       ),
-      title: Text(phone, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-      subtitle: const Text("Tap icons to Call or WhatsApp"),
+      title: Text(phone, style: TextStyle(fontSize: isMobile ? 14 : 16, fontWeight: FontWeight.w600)),
+      subtitle: isMobile ? null : Text("Tap icons to Call or WhatsApp", style: TextStyle(fontSize: isMobile ? 11 : 12)),
       trailing: Wrap(
-        spacing: 8,
+        spacing: isMobile ? 4 : 8,
         children: [
           Tooltip(
             message: "Copy",
             child: IconButton(
               onPressed: () => _copyToClipboard(phone, label: 'Phone'),
-              icon: const Icon(Icons.copy_rounded),
+              icon: Icon(Icons.copy_rounded, size: isMobile ? 18 : 20),
             ),
           ),
+          if(!isMobile)
           Tooltip(
             message: "Call",
             child: IconButton(
               onPressed: () => _launchUrl("tel:$phone"),
-              icon: const Icon(Icons.call),
+              icon: Icon(Icons.call, size: isMobile ? 18 : 20),
               color: Colors.green[700],
             ),
           ),
@@ -89,7 +94,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
             message: "WhatsApp",
             child: IconButton(
               onPressed: () => _launchUrl("https://wa.me/$phone"),
-              icon: const Icon(Icons.chat_rounded),
+              icon: Icon(Icons.chat_rounded, size: isMobile ? 18 : 20),
               color: Colors.teal[700],
             ),
           ),
@@ -99,31 +104,32 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
   }
 
   Widget _buildOfficeRow(String office) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        radius: 18,
+        radius: isMobile ? 14 : 18,
         backgroundColor: Colors.redAccent.withOpacity(0.1),
-        child: const Icon(Icons.location_on, color: Colors.redAccent),
+        child: Icon(Icons.location_on, color: Colors.redAccent, size: isMobile ? 16 : 20),
       ),
       title: Text(
         office,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: isMobile ? 14 : 16, fontWeight: FontWeight.w600),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: const Text("Open in Maps or copy"),
+      subtitle: Text(isMobile ? "Tap to open Maps" : "Open in Maps or copy", style: TextStyle(fontSize: isMobile ? 11 : 12)),
       onTap: () => _launchUrl(
         "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(office)}",
       ),
       trailing: Wrap(
-        spacing: 8,
+        spacing: isMobile ? 4 : 8,
         children: [
           Tooltip(
             message: "Copy",
             child: IconButton(
               onPressed: () => _copyToClipboard(office, label: 'Address'),
-              icon: const Icon(Icons.copy_rounded),
+              icon: Icon(Icons.copy_rounded, size: isMobile ? 18 : 20),
             ),
           ),
           Tooltip(
@@ -132,7 +138,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
               onPressed: () => _launchUrl(
                 "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(office)}",
               ),
-              icon: const Icon(Icons.directions_outlined),
+              icon: Icon(Icons.directions_outlined, size: isMobile ? 18 : 20),
               color: Colors.redAccent,
             ),
           ),
@@ -145,19 +151,23 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isWide = MediaQuery.of(context).size.width > 600;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 8,
-      margin: const EdgeInsets.all(12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isMobile ? 12 : 20)),
+      elevation: isMobile ? 4 : 8,
+      margin: EdgeInsets.all(isMobile ? 8 : 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Decorative gradient header with avatar + name
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 12 : 16, 
+              vertical: isMobile ? 12 : 18
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -172,18 +182,18 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 CircleAvatar(
-                  radius: 26,
+                  radius: isMobile ? 20 : 26,
                   backgroundColor: theme.colorScheme.onPrimary.withOpacity(0.15),
                   child: Text(
                     _getInitials(widget.name),
                     style: TextStyle(
                       color: theme.colorScheme.onPrimary,
-                      fontSize: 18,
+                      fontSize: isMobile ? 14 : 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: isMobile ? 8 : 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +208,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: isMobile ? 1 : 2),
                       Text(
                         widget.designation,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -240,7 +250,12 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
             crossFadeState: _expanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
             duration: const Duration(milliseconds: 200),
             firstChild: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 12 : 16, 
+                isMobile ? 12 : 16, 
+                isMobile ? 12 : 16, 
+                isMobile ? 16 : 20
+              ),
               child: Column(
                 children: [
                   // Quick actions row
@@ -254,7 +269,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                           onTap: () => _launchUrl("mailto:${widget.email}"),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: isMobile ? 6 : 10),
                       if (widget.phoneNumbers.isNotEmpty) ...[
                         Expanded(
                           child: _QuickActionButton(
@@ -264,7 +279,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                             onTap: () => _launchUrl("tel:${widget.phoneNumbers.first}"),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: isMobile ? 6 : 10),
                         Expanded(
                           child: _QuickActionButton(
                             icon: Icons.chat_rounded,
@@ -277,7 +292,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: isMobile ? 12 : 16),
 
                   // Phones section
                   _Section(
@@ -296,7 +311,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                         : _withDividers(widget.phoneNumbers.map(_buildPhoneRow).toList()),
                   ),
 
-                  const SizedBox(height: 12),
+                  SizedBox(height: isMobile ? 8 : 12),
 
                   // Email row
                   _Section(
@@ -306,14 +321,14 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
-                          radius: 18,
+                          radius: isMobile ? 14 : 18,
                           backgroundColor: Colors.blueAccent.withOpacity(0.1),
-                          child: const Icon(Icons.email, color: Colors.blueAccent),
+                          child: Icon(Icons.email, color: Colors.blueAccent, size: isMobile ? 16 : 20),
                         ),
                         title: Text(
                           widget.email,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: isMobile ? 14 : 16,
                             color: Colors.blue,
                             decoration: TextDecoration.underline,
                             fontWeight: FontWeight.w600,
@@ -323,20 +338,20 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                         ),
                         onTap: () => _launchUrl("mailto:${widget.email}"),
                         trailing: Wrap(
-                          spacing: 8,
+                          spacing: isMobile ? 4 : 8,
                           children: [
                             Tooltip(
                               message: "Copy",
                               child: IconButton(
                                 onPressed: () => _copyToClipboard(widget.email, label: 'Email'),
-                                icon: const Icon(Icons.copy_rounded),
+                                icon: Icon(Icons.copy_rounded, size: isMobile ? 18 : 20),
                               ),
                             ),
                             Tooltip(
                               message: "Compose Email",
                               child: IconButton(
                                 onPressed: () => _launchUrl("mailto:${widget.email}"),
-                                icon: const Icon(Icons.open_in_new_rounded),
+                                icon: Icon(Icons.open_in_new_rounded, size: isMobile ? 18 : 20),
                               ),
                             ),
                           ],
@@ -345,7 +360,7 @@ class _AdvocateProfileState extends State<AdvocateProfile> {
                     ],
                   ),
 
-                  const SizedBox(height: 12),
+                  SizedBox(height: isMobile ? 8 : 12),
 
                   // Offices section
                   _Section(
@@ -400,32 +415,39 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(isMobile ? 10 : 14),
         border: Border.all(color: theme.dividerColor.withOpacity(0.4)),
       ),
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 10 : 12, 
+        isMobile ? 10 : 12, 
+        isMobile ? 10 : 12, 
+        isMobile ? 4 : 6
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
+              Icon(icon, size: isMobile ? 16 : 18, color: theme.colorScheme.primary),
+              SizedBox(width: isMobile ? 6 : 8),
               Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
+                  fontSize: isMobile ? 14 : 16,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isMobile ? 6 : 8),
           ...children.map((c) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                padding: EdgeInsets.symmetric(vertical: isMobile ? 2.0 : 4.0),
                 child: c,
               )),
         ],
@@ -450,24 +472,29 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Material(
       color: color.withOpacity(0.08),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(isMobile ? 10 : 14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(isMobile ? 10 : 14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 8 : 12, 
+            vertical: isMobile ? 8 : 10
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color),
-              const SizedBox(width: 8),
+              Icon(icon, color: color, size: isMobile ? 16 : 20),
+              SizedBox(width: isMobile ? 6 : 8),
               Text(
                 label,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,
+                  fontSize: isMobile ? 12 : 14,
                 ),
               ),
             ],
