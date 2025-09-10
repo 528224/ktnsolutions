@@ -4,6 +4,7 @@ import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../rich_text_with_multiple_color.dart';
+import '../../widgets/user_profile.dart';
 
 class WebRecognitionsScreen extends StatelessWidget {
   final RecognitionService _recognitionService = RecognitionService();
@@ -25,37 +26,54 @@ class WebRecognitionsScreen extends StatelessWidget {
         body: Container(
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: FutureBuilder<List<Recognition>>(
-            future: _recognitionService.getRecognitions(), // 👈 now returns Future
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('Error loading recognitions: ${snapshot.error}'),
-                );
-              }
+          child:
+          ListView(
+            children: [
+                AdvocateProfile(
+                  name: "Adv. PRABHU K N",
+                  designation: "Supreme Court & All High Courts",
+                  firmName: "KTN Solutions Lawyers",
+                  email: "ktnsolutionslawyers@gmail.com",
+                  phoneNumbers: ["9388118177", "9544322000"],
+                  offices: [
+                    "Chamber No.D 422, D Block, Additional Building Complex, Supreme Court, New Delhi - 110 001",
+                    "4th Floor, Peace Tower, Opp North Gate Of Collectorate & District Panchayath Ayyanthole, Thrissur - 680 003",
+                    "2nd Floor, Delma Express, Opposite Cherupushpam Girls Higher Secondary School, Vadakkencherry, Palakkad - 678 683",
+                  ],
+                ),
+                FutureBuilder<List<Recognition>>(
+                    future: _recognitionService.getRecognitions(), // 👈 now returns Future
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error loading recognitions: ${snapshot.error}'),
+                        );
+                      }
 
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-              final recognitions = snapshot.data ?? [];
+                      final recognitions = snapshot.data ?? [];
 
-              if (recognitions.isEmpty) {
-                return const Center(
-                  child: Text('No recognitions available at the moment'),
-                );
-              }
+                      if (recognitions.isEmpty) {
+                        return const Center(
+                          child: Text('No recognitions available at the moment'),
+                        );
+                      }
 
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
-                itemCount: recognitions.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16.0),
-                itemBuilder: (context, index) {
-                  return _buildRecognitionCard(recognitions[index], context);
-                },
-              );
-            },
-          ),
+                      return ListView.separated(
+                        shrinkWrap: true, // let it fit inside parent ListView
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+                        itemCount: recognitions.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16.0),
+                        itemBuilder: (context, index) {
+                          return _buildRecognitionCard(recognitions[index], context);
+                        },
+                      );
+                    },
+                  ),
+              ],)
         ),
       ),
     );
