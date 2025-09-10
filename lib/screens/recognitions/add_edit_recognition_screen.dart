@@ -6,6 +6,8 @@ import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:ktnsolutions/services/storage_service.dart';
 import 'dart:io';
 
+import '../../rich_text_with_multiple_color.dart';
+
 class AddEditRecognitionScreen extends StatefulWidget {
   final Recognition? recognition;
 
@@ -27,7 +29,9 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
   final _recognitionService = RecognitionService();
   final _storageService = StorageService();
   final _picker = ImagePicker();
-  
+  var _titleColors = <SubTextColor>[].obs;
+  var _descColors = <SubTextColor>[].obs;
+
   String? _imagePath;
   bool _isLoading = false;
   DateTime? _publishDate;
@@ -38,6 +42,8 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     super.initState();
     if (widget.recognition != null) {
       _titleController.text = widget.recognition!.title;
+      _titleColors.value = widget.recognition!.titleSubTextColors ?? [];
+      _descColors.value = widget.recognition!.descSubTextColors ?? [];
       _orderController.text = widget.recognition!.order.toString();
       _descriptionController.text = widget.recognition!.description;
       _linkController.text = widget.recognition?.link ?? '';
@@ -54,6 +60,8 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     _orderController.dispose();
     _descriptionController.dispose();
     _linkController.dispose();
+    _titleColors.close();
+    _descColors.close();
     super.dispose();
   }
 
@@ -129,6 +137,8 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       final recognition = Recognition(
         id: widget.recognition?.id ?? '',
         title: _titleController.text.trim(),
+        titleSubTextColors: _titleColors.value,
+        descSubTextColors: _descColors.value,
         order: int.tryParse(_orderController.text.trim()) ?? 0,
         description: _descriptionController.text.trim(),
         imageUrl: imageUrl,
@@ -351,44 +361,50 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
                       if (_showPreview) _buildPreview(),
                       
                       _buildImagePicker(),
-      
-                      // Title Field
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          labelText: 'Title',
-                          border: const OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a title';
-                          }
-                          return null;
-                        },
-                      ),
+
+                      _getRichMultiTextEditorForTitle(context),
                       const SizedBox(height: 16),
-      
-                      // Description Field
-                      TextFormField(
-                        controller: _descriptionController,
-                        decoration: InputDecoration(
-                          labelText: 'Description',
-                          border: const OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        maxLines: 4,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a description';
-                          }
-                          return null;
-                        },
-                      ),
+
+                      _getRichMultiTextEditorForDesc(context),
                       const SizedBox(height: 16),
+
+                      // // Title Field
+                      // TextFormField(
+                      //   controller: _titleController,
+                      //   decoration: InputDecoration(
+                      //     labelText: 'Title',
+                      //     border: const OutlineInputBorder(),
+                      //     filled: true,
+                      //     fillColor: Colors.grey[50],
+                      //   ),
+                      //   validator: (value) {
+                      //     if (value == null || value.trim().isEmpty) {
+                      //       return 'Please enter a title';
+                      //     }
+                      //     return null;
+                      //   },
+                      // ),
+                      // const SizedBox(height: 16),
+                      //
+                      // // Description Field
+                      // TextFormField(
+                      //   controller: _descriptionController,
+                      //   decoration: InputDecoration(
+                      //     labelText: 'Description',
+                      //     border: const OutlineInputBorder(),
+                      //     alignLabelWithHint: true,
+                      //     filled: true,
+                      //     fillColor: Colors.grey[50],
+                      //   ),
+                      //   maxLines: 4,
+                      //   validator: (value) {
+                      //     if (value == null || value.trim().isEmpty) {
+                      //       return 'Please enter a description';
+                      //     }
+                      //     return null;
+                      //   },
+                      // ),
+                      // const SizedBox(height: 16),
 
                       // Order Field
                       TextFormField(
@@ -476,5 +492,30 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
               ),
       ),
     );
+  }
+
+  _getRichMultiTextEditorForTitle(BuildContext context) {
+    // Tappable colored label
+    return Obx(() {
+      var title = _titleController.text;
+      var subTitleColors = _titleColors.value;
+      return getRichMultiTextEditor(context, title, subTitleColors,
+              (String title, List<SubTextColor> result) {
+            _titleController.text = title;
+            _titleColors.value = result;
+          });
+    });
+  }
+  _getRichMultiTextEditorForDesc(BuildContext context) {
+    // Tappable colored label
+    return Obx(() {
+      var title = _descriptionController.text;
+      var subTitleColors = _descColors.value;
+      return getRichMultiTextEditor(context, title, subTitleColors,
+              (String title, List<SubTextColor> result) {
+            _descriptionController.text = title;
+            _descColors.value = result;
+          });
+    });
   }
 }

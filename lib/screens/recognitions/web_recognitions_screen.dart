@@ -23,27 +23,27 @@ class WebRecognitionsScreen extends StatelessWidget {
         body: Container(
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: StreamBuilder<List<Recognition>>(
-            stream: _recognitionService.getRecognitions(),
+          child: FutureBuilder<List<Recognition>>(
+            future: _recognitionService.getRecognitions(), // 👈 now returns Future
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return Center(
                   child: Text('Error loading recognitions: ${snapshot.error}'),
                 );
               }
-      
+
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-      
+
               final recognitions = snapshot.data ?? [];
-      
+
               if (recognitions.isEmpty) {
                 return const Center(
                   child: Text('No recognitions available at the moment'),
                 );
               }
-      
+
               return ListView.separated(
                 padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
                 itemCount: recognitions.length,

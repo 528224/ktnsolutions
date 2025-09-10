@@ -1,10 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
+import '../rich_text_with_multiple_color.dart';
+
 class Recognition {
   final String id;
   final String title;
   final String description;
+  final List<SubTextColor>? titleSubTextColors;
+  final List<SubTextColor>? descSubTextColors;
   final String? imageUrl;
   final String? link;
   final DateTime publishedDate;
@@ -17,6 +21,8 @@ class Recognition {
     required this.id,
     required this.title,
     required this.description,
+    this.titleSubTextColors,
+    this.descSubTextColors,
     this.imageUrl,
     this.link,
     required this.publishedDate,
@@ -31,6 +37,8 @@ class Recognition {
     return {
       'title': title,
       'description': description,
+      'titleSubTextColors': titleSubTextColors?.map((e) => e.toSnapShot()).toList(),
+      'descSubTextColors': descSubTextColors?.map((e) => e.toSnapShot()).toList(),
       if (imageUrl != null) 'imageUrl': imageUrl,
       'link': link,
       'publishedDate': Timestamp.fromDate(publishedDate),
@@ -48,6 +56,14 @@ class Recognition {
       id: doc.id,
       title: data['title'] ?? '',
       description: data['description'] ?? '',
+      titleSubTextColors: (data['titleSubTextColors'] as List<dynamic>?)
+          ?.map((e) => SubTextColor.fromSnapshot(Map<String, dynamic>.from(e)))
+          .toList() ??
+          [],
+      descSubTextColors: (data['descSubTextColors'] as List<dynamic>?)
+          ?.map((e) => SubTextColor.fromSnapshot(Map<String, dynamic>.from(e)))
+          .toList() ??
+          [],
       imageUrl: data['imageUrl'],
       link: data['link'],
       publishedDate: (data['publishedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -63,6 +79,8 @@ class Recognition {
     String? id,
     String? title,
     String? description,
+    List<SubTextColor>? titleSubTextColors,
+    List<SubTextColor>? descSubTextColors,
     String? imageUrl,
     String? link,
     DateTime? publishedDate,
@@ -75,6 +93,8 @@ class Recognition {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
+      titleSubTextColors: titleSubTextColors ?? this.titleSubTextColors,
+      descSubTextColors: descSubTextColors ?? this.descSubTextColors,
       imageUrl: imageUrl ?? this.imageUrl,
       link: link ?? this.link,
       publishedDate: publishedDate ?? this.publishedDate,

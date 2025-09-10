@@ -24,35 +24,36 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
           title: const Text('Recognitions'),
           elevation: 0,
         ),
-        body: StreamBuilder<List<Recognition>>(
-            stream: _recognitionService.getRecognitions(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final recognitions = snapshot.data ?? [];
-
-              if (recognitions.isEmpty) {
-                return const Center(child: Text('No recognitions found'));
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                itemCount: recognitions.length,
-                itemBuilder: (context, index) {
-                  final recognition = recognitions[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: _buildRecognitionCard(recognition),
-                  );
-                },
+        body: FutureBuilder<List<Recognition>>(
+          future: _recognitionService.getRecognitions(), // 👈 now returns Future
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error loading recognitions: ${snapshot.error}'),
               );
-            },
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final recognitions = snapshot.data ?? [];
+
+            if (recognitions.isEmpty) {
+              return const Center(
+                child: Text('No recognitions available at the moment'),
+              );
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+              itemCount: recognitions.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 16.0),
+              itemBuilder: (context, index) {
+                return _buildRecognitionCard(recognitions[index]);
+              },
+            );
+          },
         ),
         floatingActionButton: _isAdmin
             ? Padding(
