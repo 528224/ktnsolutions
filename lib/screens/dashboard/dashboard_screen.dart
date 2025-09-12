@@ -413,14 +413,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
              posting.date.isBefore(todayEnd.add(const Duration(minutes: 1)));
     }).firstOrNull;
     
-    // Group tasks by status and today's due date
-    final todayTasks = relevantTasks.where((task) {
-      return task.dueDate.isAfter(todayStart.subtract(const Duration(minutes: 1))) && 
-             task.dueDate.isBefore(todayEnd.add(const Duration(minutes: 1)));
-    }).toList();
-    
-    final completedTodayTasks = todayTasks.where((task) => task.isCompleted).toList();
-    final pendingTodayTasks = todayTasks.where((task) => !task.isCompleted).toList();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,8 +423,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
         ],
         
-        // Today's tasks grouped by status
-        if (todayTasks.isNotEmpty) ...[
+        // All tasks grouped by status
+        if (relevantTasks.isNotEmpty) ...[
           Row(
             children: [
               Icon(
@@ -442,7 +434,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                'Tasks Today:',
+                'Tasks:',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -457,9 +449,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             runSpacing: 4,
             children: [
               // Completed tasks
-              ...completedTodayTasks.map((task) => _buildTaskChip(task.title, true)),
+              ...relevantTasks.where((task) => task.isCompleted).map((task) => _buildTaskChip(task.title, true)),
               // Pending tasks
-              ...pendingTodayTasks.map((task) => _buildTaskChip(task.title, false)),
+              ...relevantTasks.where((task) => !task.isCompleted).map((task) => _buildTaskChip(task.title, false)),
             ],
           ),
         ],
@@ -472,6 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // A posting is completed if it's in the previousPostings list
     // A posting is pending if it's the nextPosting
     bool isCompleted = false;
+    bool isNextPosting = false;
     
     // Find the case that contains this posting
     for (final case_ in _cases) {
@@ -483,6 +476,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // Check if this posting is the nextPosting (pending)
       if (case_.nextPosting?.id == posting.id) {
         isCompleted = false;
+        isNextPosting = true;
         break;
       }
     }
@@ -501,78 +495,189 @@ class _DashboardScreenState extends State<DashboardScreen> {
           width: 1.5,
         ),
       ),
-      child: Row(
-        children: [
-          Icon(
-            isCompleted ? Icons.check_circle : Icons.schedule,
-            size: 16,
-            color: isCompleted ? Colors.green : Colors.orange,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  posting.title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
-                  ),
-                ),
-                Text(
-                  '${posting.staff} • ${posting.court}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
+      child: GestureDetector(
+        onTap: isNextPosting ? () => _completePosting(posting) : null,
+        child: Row(
+          children: [
+            Icon(
+              isCompleted ? Icons.check_circle : Icons.schedule,
+              size: 16,
+              color: isCompleted ? Colors.green : Colors.orange,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    posting.title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+                    ),
+                  ),
+                  Text(
+                    '${posting.staff} • ${posting.court}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isNextPosting)
+              Icon(
+                Icons.touch_app,
+                size: 14,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTaskChip(String title, bool isCompleted) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isCompleted 
-            ? Colors.green.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
+    return GestureDetector(
+      onTap: () => _toggleTaskCompletion(title, isCompleted),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
           color: isCompleted 
-              ? Colors.green.withOpacity(0.3)
-              : Colors.orange.withOpacity(0.3),
-          width: 1,
+              ? Colors.green.withOpacity(0.1)
+              : Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isCompleted 
+                ? Colors.green.withOpacity(0.3)
+                : Colors.orange.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 12,
+              color: isCompleted ? Colors.green : Colors.orange,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 12,
-            color: isCompleted ? Colors.green : Colors.orange,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
     );
+  }
+
+  Future<void> _completePosting(Posting posting) async {
+    try {
+      // Find the case that contains this posting as nextPosting
+      for (final case_ in _cases) {
+        if (case_.nextPosting?.id == posting.id) {
+          // Complete the posting using the CaseService
+          await CaseService.completePosting(
+            caseId: case_.id,
+            completionNote: 'Completed via dashboard',
+            newPosting: null, // This will set nextPosting to null
+          );
+          
+          // Refresh the UI
+          _loadCases();
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Posting marked as completed'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          return; // Exit after successful completion
+        }
+      }
+      
+      // If we reach here, the posting was not found as nextPosting
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Posting not found or already completed'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error completing posting: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleTaskCompletion(String taskTitle, bool currentStatus) async {
+    try {
+      // Find the case and task to update
+      for (final case_ in _cases) {
+        final taskIndex = case_.tasks.indexWhere((task) => task.title == taskTitle);
+        if (taskIndex != -1) {
+          final task = case_.tasks[taskIndex];
+          final updatedTask = task.copyWith(
+            doneDate: currentStatus ? null : DateTime.now(),
+          );
+          
+          // Create updated tasks list
+          final updatedTasks = List<Task>.from(case_.tasks);
+          updatedTasks[taskIndex] = updatedTask;
+          
+          // Update the case with new tasks while preserving all other data
+          final updatedCase = case_.copyWith(tasks: updatedTasks);
+          
+          // Update in Firestore
+          await CaseService.updateCase(case_.id, updatedCase);
+          
+          // Refresh the UI
+          _loadCases();
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  currentStatus 
+                      ? 'Task marked as pending' 
+                      : 'Task marked as completed',
+                ),
+                backgroundColor: currentStatus ? Colors.orange : Colors.green,
+              ),
+            );
+          }
+          break;
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
 

@@ -6,7 +6,7 @@ class LegalCase {
   final String id;
   final String title;
   final List<Posting> previousPostings;
-  final Posting? nextPosting;
+  Posting? nextPosting;
   final String clientName;
   final String clientNumber;
   final List<Task> tasks;
@@ -92,7 +92,7 @@ class LegalCase {
       id: id ?? this.id,
       title: title ?? this.title,
       previousPostings: previousPostings ?? this.previousPostings,
-      nextPosting: nextPosting,
+      nextPosting: nextPosting ?? this.nextPosting,
       clientName: clientName ?? this.clientName,
       clientNumber: clientNumber ?? this.clientNumber,
       tasks: tasks ?? this.tasks,

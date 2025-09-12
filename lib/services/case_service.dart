@@ -181,6 +181,7 @@ class CaseService {
         completionNote: completionNote,
         newPosting: newPosting,
       );
+      updatedCase.nextPosting = null;
 
       await updateCase(caseId, updatedCase);
     } catch (e) {
