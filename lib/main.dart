@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ktnsolutions/screens/recognitions/web_recognitions_screen.dart';
 import 'package:ktnsolutions/screens/main_home_screen.dart';
-import 'di/dependencies.dart';
 import 'firebase_options.dart';
 import 'screens/auth/phone_auth_screen.dart';
 import 'dart:io' show Platform;
@@ -16,9 +15,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
-  // Initialize dependencies
-  await Dependencies().init();
+
   final isWeb = identical(0, 0.0); // Platform detection for web
   if (isWeb){
     var currentFirebaseAuthUser = FirebaseAuth.instance.currentUser;

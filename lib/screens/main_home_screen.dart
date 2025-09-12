@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ktnsolutions/screens/cases/cases_screen.dart';
 import 'package:ktnsolutions/screens/recognitions/recognitions_screen.dart';
-import 'package:ktnsolutions/screens/reports/reports_screen.dart';
 
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
@@ -16,8 +14,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
 
   final List<Widget> _pages = [
     const RecognitionsScreen(),
-    const CasesScreen(),
-    const ReportsScreen(),
   ];
 
   void _onItemTapped(int index) {
