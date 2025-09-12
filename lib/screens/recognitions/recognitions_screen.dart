@@ -251,24 +251,58 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
 
               const SizedBox(height: 12),
               
-              // Image if available
-              if (recognition.imageUrl != null && recognition.imageUrl!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    recognition.imageUrl!,
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+              // Images if available
+              if (recognition.imageUrls != null && recognition.imageUrls!.isNotEmpty) ...[
+                if (recognition.imageUrls!.length == 1) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      recognition.imageUrls!.first,
+                      width: double.infinity,
                       height: 180,
-                      color: Colors.grey[100],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 180,
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ] else ...[
+                  // Multiple images - show in a horizontal scroll
+                  SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recognition.imageUrls!.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          width: 180,
+                          margin: const EdgeInsets.only(right: 8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: Image.network(
+                              recognition.imageUrls![index],
+                              width: 180,
+                              height: 180,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                height: 180,
+                                color: Colors.grey[100],
+                                child: const Center(
+                                  child: Icon(Icons.broken_image, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
               
               const SizedBox(height: 12),
 
@@ -345,7 +379,7 @@ class _ItemLinkButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.5)),
+        side: BorderSide(color: Theme.of(context).primaryColor.withValues(alpha: 0.5)),
       ),
       icon: const Icon(Icons.link, size: 16),
       label: Text(title, overflow: TextOverflow.ellipsis),

@@ -9,7 +9,7 @@ class Recognition {
   final String description;
   final List<SubTextColor>? titleSubTextColors;
   final List<SubTextColor>? descSubTextColors;
-  final String? imageUrl;
+  final List<String>? imageUrls;
   final String? link;
   final DateTime publishedDate;
   final int order;
@@ -24,7 +24,7 @@ class Recognition {
     required this.description,
     this.titleSubTextColors,
     this.descSubTextColors,
-    this.imageUrl,
+    this.imageUrls,
     this.link,
     required this.publishedDate,
     this.order = 0,
@@ -42,7 +42,7 @@ class Recognition {
       'titleSubTextColors': titleSubTextColors?.map((e) => e.toSnapShot()).toList(),
       'descSubTextColors': descSubTextColors?.map((e) => e.toSnapShot()).toList(),
       'itemsWithLink': itemsWithLink?.map((e) => e.toSnapShot()).toList(),
-      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (imageUrls != null) 'imageUrls': imageUrls,
       'link': link,
       'publishedDate': Timestamp.fromDate(publishedDate),
       'order': order,
@@ -71,7 +71,7 @@ class Recognition {
           ?.map((e) => ItemWithLink.fromSnapshot(Map<String, dynamic>.from(e)))
           .toList() ??
           [],
-      imageUrl: data['imageUrl'],
+      imageUrls: (data['imageUrls'] as List<dynamic>?)?.cast<String>(),
       link: data['link'],
       publishedDate: (data['publishedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       order: data['order'] ?? 0,
@@ -88,7 +88,7 @@ class Recognition {
     String? description,
     List<SubTextColor>? titleSubTextColors,
     List<SubTextColor>? descSubTextColors,
-    String? imageUrl,
+    List<String>? imageUrls,
     String? link,
     DateTime? publishedDate,
     int? order,
@@ -103,7 +103,7 @@ class Recognition {
       description: description ?? this.description,
       titleSubTextColors: titleSubTextColors ?? this.titleSubTextColors,
       descSubTextColors: descSubTextColors ?? this.descSubTextColors,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       link: link ?? this.link,
       publishedDate: publishedDate ?? this.publishedDate,
       order: order ?? this.order,

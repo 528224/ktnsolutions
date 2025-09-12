@@ -32,7 +32,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
   var _titleColors = <SubTextColor>[].obs;
   var _descColors = <SubTextColor>[].obs;
 
-  String? _imagePath;
+  List<String> _imagePaths = [];
   bool _isLoading = false;
   DateTime? _publishDate;
   bool _showPreview = false;
@@ -51,7 +51,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       _orderController.text = widget.recognition!.order.toString();
       _descriptionController.text = widget.recognition!.description;
       _linkController.text = widget.recognition?.link ?? '';
-      _imagePath = widget.recognition?.imageUrl;
+      _imagePaths = widget.recognition?.imageUrls ?? [];
       _publishDate = widget.recognition!.publishedDate;
 
       // Initialize itemsWithLink controllers from existing data
@@ -142,7 +142,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         final pickedFile = await _picker.pickImage(source: source);
         if (pickedFile != null) {
           setState(() {
-            _imagePath = pickedFile.path;
+            _imagePaths.add(pickedFile.path);
           });
         }
       }
@@ -150,6 +150,26 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
       debugPrint('Error picking image: $e');
       Get.snackbar('Error', 'Failed to pick image');
     }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    try {
+      final List<XFile> pickedFiles = await _picker.pickMultiImage();
+      if (pickedFiles.isNotEmpty) {
+        setState(() {
+          _imagePaths.addAll(pickedFiles.map((file) => file.path));
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking multiple images: $e');
+      Get.snackbar('Error', 'Failed to pick images');
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _imagePaths.removeAt(index);
+    });
   }
 
   Future<void> _saveRecognition() async {
@@ -160,14 +180,21 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     });
 
     try {
-      String? imageUrl = _imagePath;
+      List<String> imageUrls = [];
       
-      // Only upload new image if it's a local file path (not a URL)
-      if (_imagePath != null && _imagePath!.startsWith('/')) {
-        imageUrl = await _storageService.uploadFile(
-          _imagePath!,
-          'recognitions',
-        );
+      // Upload all images that are local file paths (not URLs)
+      for (String imagePath in _imagePaths) {
+        if (imagePath.startsWith('/')) {
+          // Local file - upload it
+          final uploadedUrl = await _storageService.uploadFile(
+            imagePath,
+            'recognitions',
+          );
+          imageUrls.add(uploadedUrl);
+        } else {
+          // Already a URL - use as is
+          imageUrls.add(imagePath);
+        }
       }
 
       // Build itemsWithLink from controllers (ignore completely empty rows)
@@ -187,7 +214,7 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
         descSubTextColors: _descColors.value,
         order: int.tryParse(_orderController.text.trim()) ?? 0,
         description: _descriptionController.text.trim(),
-        imageUrl: imageUrl,
+        imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
         link: _linkController.text.trim().isNotEmpty ? _linkController.text.trim() : null,
         publishedDate: _publishDate!,
         createdBy: widget.recognition?.createdBy,
@@ -295,23 +322,37 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            if (_imagePath != null) ...[
+            if (_imagePaths.isNotEmpty) ...[
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4.0),
-                child: _imagePath!.startsWith('http')
-                    ? Image.network(
-                        _imagePath!,
-                        width: double.infinity,
-                        height: 140,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.file(
-                        File(_imagePath!),
-                        width: double.infinity,
-                        height: 140,
-                        fit: BoxFit.cover,
+              SizedBox(
+                height: 140,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _imagePaths.length,
+                  itemBuilder: (context, index) {
+                    final imagePath = _imagePaths[index];
+                    return Container(
+                      width: 140,
+                      margin: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4.0),
+                        child: imagePath.startsWith('http')
+                            ? Image.network(
+                                imagePath,
+                                width: 140,
+                                height: 140,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.file(
+                                File(imagePath),
+                                width: 140,
+                                height: 140,
+                                fit: BoxFit.cover,
+                              ),
                       ),
+                    );
+                  },
+                ),
               ),
             ],
           ],
@@ -324,49 +365,96 @@ class _AddEditRecognitionScreenState extends State<AddEditRecognitionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recognition Image (Optional)',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        if (_imagePath != null) ...[
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recognition Images (Optional)',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: _imagePath!.startsWith('http')
-                  ? Image.network(_imagePath!, fit: BoxFit.cover)
-                  : Image.file(File(_imagePath!), fit: BoxFit.cover),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: _pickImage,
-                child: const Text('Change Image'),
-              ),
-              const SizedBox(width: 8),
+            if (_imagePaths.isNotEmpty)
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _imagePath = null;
+                    _imagePaths.clear();
                   });
                 },
-                child: const Text('Remove Image'),
+                child: const Text('Clear All'),
               ),
-            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // Image grid
+        if (_imagePaths.isNotEmpty) ...[
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemCount: _imagePaths.length,
+            itemBuilder: (context, index) {
+              final imagePath = _imagePaths[index];
+              return Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: imagePath.startsWith('http')
+                          ? Image.network(imagePath, fit: BoxFit.cover)
+                          : Image.file(File(imagePath), fit: BoxFit.cover),
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-        ] else
-          OutlinedButton(
-            onPressed: _pickImage,
-            child: const Text('Add Image'),
-          ),
+          const SizedBox(height: 12),
+        ],
+        
+        // Add image buttons
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.add_a_photo),
+              label: const Text('Add Single'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: _pickMultipleImages,
+              icon: const Icon(Icons.add_photo_alternate),
+              label: const Text('Add Multiple'),
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
       ],
     );
