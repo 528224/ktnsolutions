@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class User {
+class UserDetails {
   final String id;
   final String name;
   final String mobile;
   final bool isAdmin;
 
-  User({
+  UserDetails({
     required this.id,
     required this.name,
     required this.mobile,
@@ -21,9 +21,9 @@ class User {
     };
   }
 
-  factory User.fromFirestore(DocumentSnapshot doc) {
+  factory UserDetails.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    return User(
+    return UserDetails(
       id: doc.id,
       name: data['name'] ?? '',
       mobile: data['mobile'] ?? '',
@@ -31,8 +31,8 @@ class User {
     );
   }
 
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
+  factory UserDetails.fromJson(Map<String, dynamic> json) {
+    return UserDetails(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       mobile: json['mobile'] ?? '',
@@ -40,13 +40,13 @@ class User {
     );
   }
 
-  User copyWith({
+  UserDetails copyWith({
     String? id,
     String? name,
     String? mobile,
     bool? isAdmin,
   }) {
-    return User(
+    return UserDetails(
       id: id ?? this.id,
       name: name ?? this.name,
       mobile: mobile ?? this.mobile,
@@ -56,20 +56,20 @@ class User {
 }
 
 // Global array with user objects
-final List<User> globalUsers = [
-  User(
+final List<UserDetails> globalUsers = [
+  UserDetails(
     id: '1',
     name: 'Prbhu',
     mobile: '+919544322000',
     isAdmin: true,
   ),
-  User(
+  UserDetails(
     id: '2',
     name: 'Cristo',
     mobile: '+919846476909',
     isAdmin: false,
   ),
-  User(
+  UserDetails(
     id: '3',
     name: 'Simjo',
     mobile: '+911234567890',

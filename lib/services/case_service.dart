@@ -164,4 +164,45 @@ class CaseService {
       throw Exception('Failed to search cases: $e');
     }
   }
+
+  /// Complete a posting and optionally set a new posting
+  static Future<void> completePosting({
+    required String caseId,
+    required String completionNote,
+    Posting? newPosting,
+  }) async {
+    try {
+      final case_ = await getCaseById(caseId);
+      if (case_ == null) {
+        throw Exception('Case not found');
+      }
+
+      final updatedCase = case_.completePosting(
+        completionNote: completionNote,
+        newPosting: newPosting,
+      );
+
+      await updateCase(caseId, updatedCase);
+    } catch (e) {
+      throw Exception('Failed to complete posting: $e');
+    }
+  }
+
+  /// Add a new posting to a case
+  static Future<void> addNewPosting({
+    required String caseId,
+    required Posting posting,
+  }) async {
+    try {
+      final case_ = await getCaseById(caseId);
+      if (case_ == null) {
+        throw Exception('Case not found');
+      }
+
+      final updatedCase = case_.addNewPosting(posting);
+      await updateCase(caseId, updatedCase);
+    } catch (e) {
+      throw Exception('Failed to add new posting: $e');
+    }
+  }
 }

@@ -92,7 +92,7 @@ class LegalCase {
       id: id ?? this.id,
       title: title ?? this.title,
       previousPostings: previousPostings ?? this.previousPostings,
-      nextPosting: nextPosting ?? this.nextPosting,
+      nextPosting: nextPosting,
       clientName: clientName ?? this.clientName,
       clientNumber: clientNumber ?? this.clientNumber,
       tasks: tasks ?? this.tasks,
@@ -108,4 +108,37 @@ class LegalCase {
   
   double get completionPercentage => 
       totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0.0;
+
+  /// Mark the current next posting as completed and optionally set a new posting
+  LegalCase completePosting({
+    required String completionNote,
+    Posting? newPosting,
+  }) {
+    if (nextPosting == null) {
+      throw Exception('No next posting to complete');
+    }
+
+    // Create completed posting with completion note
+    final completedPosting = nextPosting!.copyWith(
+      note: completionNote,
+    );
+
+    // Add completed posting to previous postings
+    final updatedPreviousPostings = List<Posting>.from(previousPostings)
+      ..add(completedPosting);
+
+    return copyWith(
+      previousPostings: updatedPreviousPostings,
+      nextPosting: newPosting,
+    );
+  }
+
+  /// Add a new posting when no next posting exists
+  LegalCase addNewPosting(Posting posting) {
+    if (nextPosting != null) {
+      throw Exception('Next posting already exists. Use completePosting instead.');
+    }
+
+    return copyWith(nextPosting: posting);
+  }
 }

@@ -1,6 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/models.dart';
 import '../../models/court.dart';
 import '../../services/case_service.dart';
@@ -34,6 +34,20 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     // Check if current user is admin by matching phone number
     return globalUsers.any((user) => 
         user.mobile == currentUser!.phoneNumber && user.isAdmin);
+  }
+
+  bool get _canManagePostings {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser?.phoneNumber == null) return false;
+    
+    final currentUserData = globalUsers.firstWhere(
+      (user) => user.mobile == currentUser!.phoneNumber,
+      orElse: () => UserDetails(id: '', name: '', mobile: '', isAdmin: false),
+    );
+    
+    // Can manage if admin or if assigned to current posting
+    return currentUserData.isAdmin || 
+           _currentCase.nextPosting?.staff == currentUserData.name;
   }
 
   @override
@@ -171,6 +185,20 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     onPressed: () => _showEditNextPostingDialog(),
                     icon: const Icon(Icons.edit),
                     tooltip: 'Edit Next Posting',
+                  ),
+                if (_canManagePostings && _currentCase.nextPosting != null)
+                  IconButton(
+                    onPressed: () => _showCompletePostingDialog(),
+                    icon: const Icon(Icons.check_circle),
+                    tooltip: 'Complete Posting',
+                    color: Colors.green,
+                  ),
+                if (_isAdmin && _currentCase.nextPosting == null)
+                  IconButton(
+                    onPressed: () => _showAddNewPostingDialog(),
+                    icon: const Icon(Icons.add_circle),
+                    tooltip: 'Add New Posting',
+                    color: Colors.blue,
                   ),
               ],
             ),
@@ -852,6 +880,338 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     );
   }
 
+  Future<void> _showCompletePostingDialog() async {
+    final completionNoteController = TextEditingController();
+    bool addNewPosting = false;
+    
+    // New posting fields
+    final newPostingTitleController = TextEditingController();
+    final newPostingNoteController = TextEditingController();
+    DateTime newPostingDate = DateTime.now();
+    String? selectedCourt;
+    String? selectedStaff;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Complete Posting'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: completionNoteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Completion Note *',
+                    border: OutlineInputBorder(),
+                    hintText: 'Describe what was accomplished',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Add New Posting'),
+                  subtitle: const Text('Create a new posting after completing this one'),
+                  value: addNewPosting,
+                  onChanged: (value) {
+                    setState(() {
+                      addNewPosting = value ?? false;
+                    });
+                  },
+                ),
+                if (addNewPosting) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'New Posting Details',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPostingTitleController,
+                    decoration: const InputDecoration(
+                      labelText: 'New Posting Title',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCourt,
+                    decoration: const InputDecoration(
+                      labelText: 'Court',
+                      border: OutlineInputBorder(),
+                      hintText: 'Select court',
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Select Court'),
+                      ),
+                      ...globalCourts.map((court) {
+                        return DropdownMenuItem(
+                          value: court.name,
+                          child: Text(court.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCourt = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedStaff,
+                    decoration: const InputDecoration(
+                      labelText: 'Staff',
+                      border: OutlineInputBorder(),
+                      hintText: 'Select staff',
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Select Staff'),
+                      ),
+                      ...globalUsers.map((user) {
+                        return DropdownMenuItem(
+                          value: user.name,
+                          child: Text(user.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedStaff = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPostingNoteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Note',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: const Text('Date'),
+                    subtitle: Text(DateFormat('MMM dd, yyyy').format(newPostingDate)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: newPostingDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        setState(() {
+                          newPostingDate = date;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (completionNoteController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Completion note is required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Complete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      Posting? newPosting;
+      if (addNewPosting && newPostingTitleController.text.trim().isNotEmpty) {
+        newPosting = Posting(
+          id: '',
+          title: newPostingTitleController.text.trim(),
+          court: selectedCourt ?? '',
+          staff: selectedStaff ?? '',
+          note: newPostingNoteController.text.trim(),
+          date: newPostingDate,
+        );
+      }
+
+      await _completePosting(
+        completionNote: completionNoteController.text.trim(),
+        newPosting: newPosting,
+      );
+    }
+  }
+
+  Future<void> _showAddNewPostingDialog() async {
+    final titleController = TextEditingController();
+    final noteController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    String? selectedCourt;
+    String? selectedStaff;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add New Posting'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Posting Title *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedCourt,
+                  decoration: const InputDecoration(
+                    labelText: 'Court',
+                    border: OutlineInputBorder(),
+                    hintText: 'Select court',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Select Court'),
+                    ),
+                    ...globalCourts.map((court) {
+                      return DropdownMenuItem(
+                        value: court.name,
+                        child: Text(court.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCourt = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedStaff,
+                  decoration: const InputDecoration(
+                    labelText: 'Staff',
+                    border: OutlineInputBorder(),
+                    hintText: 'Select staff',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Select Staff'),
+                    ),
+                    ...globalUsers.map((user) {
+                      return DropdownMenuItem(
+                        value: user.name,
+                        child: Text(user.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedStaff = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Note',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text('Date'),
+                  subtitle: Text(DateFormat('MMM dd, yyyy').format(selectedDate)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setState(() {
+                        selectedDate = date;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Posting title is required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Add Posting'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      final newPosting = Posting(
+        id: '',
+        title: titleController.text.trim(),
+        court: selectedCourt ?? '',
+        staff: selectedStaff ?? '',
+        note: noteController.text.trim(),
+        date: selectedDate,
+      );
+
+      await _addNewPosting(newPosting);
+    }
+  }
+
   // Update Methods
   Future<void> _updateCase({
     required String title,
@@ -949,6 +1309,100 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating posting: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _completePosting({
+    required String completionNote,
+    Posting? newPosting,
+  }) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await CaseService.completePosting(
+        caseId: _currentCase.id,
+        completionNote: completionNote,
+        newPosting: newPosting,
+      );
+
+      // Refresh the case data
+      final updatedCase = await CaseService.getCaseById(_currentCase.id);
+      if (updatedCase != null) {
+        setState(() {
+          _currentCase = updatedCase;
+          _isLoading = false;
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newPosting != null 
+                ? 'Posting completed and new posting added successfully!'
+                : 'Posting completed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error completing posting: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _addNewPosting(Posting posting) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await CaseService.addNewPosting(
+        caseId: _currentCase.id,
+        posting: posting,
+      );
+
+      // Refresh the case data
+      final updatedCase = await CaseService.getCaseById(_currentCase.id);
+      if (updatedCase != null) {
+        setState(() {
+          _currentCase = updatedCase;
+          _isLoading = false;
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('New posting added successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding new posting: $e'),
             backgroundColor: Colors.red,
           ),
         );
