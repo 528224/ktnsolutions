@@ -141,4 +141,13 @@ class LegalCase {
 
     return copyWith(nextPosting: posting);
   }
+
+  /// Mark the case as completed (done)
+  LegalCase markAsCompleted() {
+    if (nextPosting != null) {
+      throw Exception('Cannot mark case as completed while next posting exists');
+    }
+
+    return copyWith(doneDate: DateTime.now());
+  }
 }

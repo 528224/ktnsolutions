@@ -205,4 +205,19 @@ class CaseService {
       throw Exception('Failed to add new posting: $e');
     }
   }
+
+  /// Mark a case as completed (done)
+  static Future<void> markCaseAsCompleted(String caseId) async {
+    try {
+      final case_ = await getCaseById(caseId);
+      if (case_ == null) {
+        throw Exception('Case not found');
+      }
+
+      final updatedCase = case_.markAsCompleted();
+      await updateCase(caseId, updatedCase);
+    } catch (e) {
+      throw Exception('Failed to mark case as completed: $e');
+    }
+  }
 }

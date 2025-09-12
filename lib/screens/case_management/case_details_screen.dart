@@ -64,13 +64,18 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildCaseHeader(),
-                const SizedBox(height: 24),
-                _buildNextPostingSection(context),
-                const SizedBox(height: 24),
-                _buildDueTasksSection(context),
-                const SizedBox(height: 24),
-                _buildTimelineSection(context),
+            _buildCaseHeader(),
+            const SizedBox(height: 24),
+            if (!_currentCase.isCompleted) ...[
+              _buildNextPostingSection(context),
+              const SizedBox(height: 24),
+              _buildDueTasksSection(context),
+              const SizedBox(height: 24),
+            ] else ...[
+              _buildCompletionSummarySection(context),
+              const SizedBox(height: 24),
+            ],
+            _buildTimelineSection(context),
               ],
             ),
           ),
@@ -105,11 +110,18 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     ),
                   ),
                 ),
-                if (_isAdmin)
+                if (_isAdmin && !_currentCase.isCompleted)
                   IconButton(
                     onPressed: () => _showEditCaseDialog(),
                     icon: const Icon(Icons.edit),
                     tooltip: 'Edit Case Details',
+                  ),
+                if (_isAdmin && _currentCase.nextPosting == null && !_currentCase.isCompleted)
+                  IconButton(
+                    onPressed: () => _showMarkAsDoneDialog(),
+                    icon: const Icon(Icons.check_circle_outline),
+                    tooltip: 'Mark Case as Done',
+                    color: Colors.green,
                   ),
               ],
             ),
@@ -147,6 +159,36 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                 ),
               ],
             ),
+            if (_currentCase.isCompleted) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.green[300]!),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: Colors.green[700],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Case Completed',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -180,20 +222,20 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     ),
                   ),
                 ),
-                if (_isAdmin)
+                if (_isAdmin && !_currentCase.isCompleted)
                   IconButton(
                     onPressed: () => _showEditNextPostingDialog(),
                     icon: const Icon(Icons.edit),
                     tooltip: 'Edit Next Posting',
                   ),
-                if (_canManagePostings && _currentCase.nextPosting != null)
+                if (_canManagePostings && _currentCase.nextPosting != null && !_currentCase.isCompleted)
                   IconButton(
                     onPressed: () => _showCompletePostingDialog(),
                     icon: const Icon(Icons.check_circle),
                     tooltip: 'Complete Posting',
                     color: Colors.green,
                   ),
-                if (_isAdmin && _currentCase.nextPosting == null)
+                if (_isAdmin && _currentCase.nextPosting == null && !_currentCase.isCompleted)
                   IconButton(
                     onPressed: () => _showAddNewPostingDialog(),
                     icon: const Icon(Icons.add_circle),
@@ -313,7 +355,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                       ),
                     ),
                   ),
-                if (_isAdmin)
+                if (_isAdmin && !_currentCase.isCompleted)
                   IconButton(
                     onPressed: () => _showEditTasksDialog(),
                     icon: const Icon(Icons.edit),
@@ -393,6 +435,105 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompletionSummarySection(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: Colors.green[700],
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Case Completed',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[700],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Colors.green[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Completed on ${DateFormat('MMMM dd, yyyy').format(_currentCase.doneDate!)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.task_alt,
+                        size: 16,
+                        color: Colors.green[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'All ${_currentCase.totalTasksCount} tasks completed',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.event,
+                        size: 16,
+                        color: Colors.green[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_currentCase.previousPostings.length} postings completed',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1212,6 +1353,77 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     }
   }
 
+  Future<void> _showMarkAsDoneDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark Case as Done'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Are you sure you want to mark this case as completed?',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                border: Border.all(color: Colors.orange[300]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone. The case will be moved to completed cases.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Case Details:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text('• Title: ${_currentCase.title}'),
+            Text('• Client: ${_currentCase.clientName}'),
+            Text('• Tasks Completed: ${_currentCase.completedTasksCount}/${_currentCase.totalTasksCount}'),
+            Text('• Previous Postings: ${_currentCase.previousPostings.length}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Mark as Done'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await _markCaseAsDone();
+    }
+  }
+
   // Update Methods
   Future<void> _updateCase({
     required String title,
@@ -1403,6 +1615,47 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error adding new posting: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _markCaseAsDone() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await CaseService.markCaseAsCompleted(_currentCase.id);
+
+      // Refresh the case data
+      final updatedCase = await CaseService.getCaseById(_currentCase.id);
+      if (updatedCase != null) {
+        setState(() {
+          _currentCase = updatedCase;
+          _isLoading = false;
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Case marked as completed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error marking case as completed: $e'),
             backgroundColor: Colors.red,
           ),
         );
