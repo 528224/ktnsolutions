@@ -97,17 +97,17 @@ class _CasesListScreenState extends State<CasesListScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _navigateToAddCase,
+            tooltip: 'Add New Case',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadCases,
           ),
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddCase,
-        tooltip: 'Add New Case',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 

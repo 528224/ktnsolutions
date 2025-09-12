@@ -16,6 +16,19 @@ class RecognitionsScreen extends StatefulWidget {
 class _RecognitionsScreenState extends State<RecognitionsScreen> {
   final RecognitionService _recognitionService = RecognitionService();
   final bool _isAdmin = true; // TODO: Get from auth service
+  Future<List<Recognition>>? _recognitionsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshRecognitions();
+  }
+
+  void _refreshRecognitions() {
+    setState(() {
+      _recognitionsFuture = _recognitionService.getRecognitions();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +37,22 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
         appBar: AppBar(
           title: const Text('Recognitions'),
           elevation: 0,
+          actions: [
+            if (_isAdmin)
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _navigateToAddEditRecognition,
+                tooltip: 'Add New Recognition',
+              ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshRecognitions,
+              tooltip: 'Refresh',
+            ),
+          ],
         ),
         body: FutureBuilder<List<Recognition>>(
-          future: _recognitionService.getRecognitions(), // 👈 now returns Future
+          future: _recognitionsFuture,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(
@@ -56,17 +82,6 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
             );
           },
         ),
-        floatingActionButton: _isAdmin
-            ? Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                ),
-                child: FloatingActionButton(
-                  onPressed: _navigateToAddEditRecognition,
-                  child: const Icon(Icons.add),
-                ),
-              )
-            : null,
       ),
     );
   }
