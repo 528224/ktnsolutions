@@ -16,7 +16,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DateTime? _customEndDate;
   List<LegalCase> _cases = [];
   bool _isLoading = false;
-  Set<String> _expandedCases = {}; // Track which cases are expanded
 
   @override
   void initState() {
@@ -366,7 +365,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
 
-    final isExpanded = _expandedCases.contains(case_.id);
     final hasRelevantItems = relevantPostings.isNotEmpty || relevantTasks.isNotEmpty;
 
     return Card(
@@ -390,24 +388,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    if (hasRelevantItems) ...[
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            if (isExpanded) {
-                              _expandedCases.remove(case_.id);
-                            } else {
-                              _expandedCases.add(case_.id);
-                            }
-                          });
-                        },
-                        icon: Icon(
-                          isExpanded ? Icons.expand_less : Icons.expand_more,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        tooltip: isExpanded ? 'Collapse details' : 'Expand details',
-                      ),
-                    ],
                   ],
                 ),
                 if (hasRelevantItems) ...[
@@ -416,28 +396,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ],
             ),
-            if (isExpanded && hasRelevantItems) ...[
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 12),
-              if (relevantPostings.isNotEmpty) ...[
-                const Text(
-                  'Postings',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                ...relevantPostings.map((posting) => _buildPostingItem(posting, case_)),
-                const SizedBox(height: 12),
-              ],
-              if (relevantTasks.isNotEmpty) ...[
-                const Text(
-                  'Tasks',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                ...relevantTasks.map((task) => _buildTaskItem(task)),
-              ],
-            ],
           ],
         ),
       ),
@@ -469,7 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         // Today's posting (single)
         if (todayPosting != null) ...[
-          _buildTodayPostingItem(todayPosting),
+          _buildTodayPostingItem(todayPosting, relevantPostings),
           const SizedBox(height: 8),
         ],
         
@@ -509,12 +467,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTodayPostingItem(Posting posting) {
+  Widget _buildTodayPostingItem(Posting posting, List<Posting> relevantPostings) {
     // Check if posting is completed
+    // A posting is completed if it's in the previousPostings list
+    // A posting is pending if it's the nextPosting
     bool isCompleted = false;
+    
+    // Find the case that contains this posting
     for (final case_ in _cases) {
+      // Check if this posting is in previousPostings (completed)
       if (case_.previousPostings.any((p) => p.id == posting.id)) {
         isCompleted = true;
+        break;
+      }
+      // Check if this posting is the nextPosting (pending)
+      if (case_.nextPosting?.id == posting.id) {
+        isCompleted = false;
         break;
       }
     }
@@ -607,44 +575,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildCollapsedItemChip(String title, bool isCompleted, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: isCompleted 
-            ? Colors.green.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isCompleted 
-              ? Colors.green.withOpacity(0.3)
-              : Colors.orange.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 10,
-            color: isCompleted ? Colors.green : Colors.orange,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCollapsedPostingItem(Posting posting) {
     // Check if posting is completed by looking through all cases
@@ -703,123 +633,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPostingItem(Posting posting, LegalCase case_) {
-    final isCompleted = case_.previousPostings.contains(posting);
-    final isNextPosting = case_.nextPosting?.id == posting.id;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isNextPosting 
-              ? Colors.blue.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isCompleted ? Icons.check_circle : Icons.schedule,
-            color: isCompleted ? Colors.green : Colors.orange,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  posting.title,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  '${DateFormat('MMM dd, yyyy').format(posting.date)} • ${posting.court}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                if (posting.note.isNotEmpty)
-                  Text(
-                    posting.note,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (isNextPosting)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'Next',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskItem(Task task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: task.isCompleted 
-              ? Colors.green.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: task.isCompleted ? Colors.green : Colors.grey,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                Text(
-                  'Due: ${DateFormat('MMM dd, yyyy').format(task.dueDate)} • ${task.staff}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   DateTime _getStartDate() {
     final now = DateTime.now();
