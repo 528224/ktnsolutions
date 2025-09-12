@@ -389,23 +389,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Client: ${case_.clientName}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
                       if (hasRelevantItems) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '${relevantPostings.length} posting${relevantPostings.length != 1 ? 's' : ''}, ${relevantTasks.length} task${relevantTasks.length != 1 ? 's' : ''}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
+                        const SizedBox(height: 8),
+                        _buildCollapsedSummary(relevantPostings, relevantTasks, startDate, endDate),
                       ],
                     ],
                   ),
@@ -473,6 +459,217 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCollapsedSummary(List<Posting> relevantPostings, List<Task> relevantTasks, DateTime startDate, DateTime endDate) {
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+    final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+    
+    // Filter postings for today
+    final todayPostings = relevantPostings.where((posting) {
+      return posting.date.isAfter(todayStart.subtract(const Duration(minutes: 1))) && 
+             posting.date.isBefore(todayEnd.add(const Duration(minutes: 1)));
+    }).toList();
+    
+    // Count completed vs pending items
+    int completedPostings = 0;
+    int pendingPostings = 0;
+    int completedTasks = 0;
+    int pendingTasks = 0;
+    
+    for (final posting in relevantPostings) {
+      // Check if posting is completed (it's in previousPostings)
+      bool isCompleted = false;
+      for (final case_ in _cases) {
+        if (case_.previousPostings.any((p) => p.id == posting.id)) {
+          isCompleted = true;
+          break;
+        }
+      }
+      if (isCompleted) {
+        completedPostings++;
+      } else {
+        pendingPostings++;
+      }
+    }
+    
+    for (final task in relevantTasks) {
+      if (task.isCompleted) {
+        completedTasks++;
+      } else {
+        pendingTasks++;
+      }
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Today's postings
+        if (todayPostings.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Today: ${todayPostings.length} posting${todayPostings.length != 1 ? 's' : ''}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+        
+        // Summary with status indicators
+        Row(
+          children: [
+            // Postings summary
+            if (relevantPostings.isNotEmpty) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.event,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${relevantPostings.length} posting${relevantPostings.length != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (completedPostings > 0) ...[
+                    Icon(
+                      Icons.check_circle,
+                      size: 12,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$completedPostings',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  if (pendingPostings > 0) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.schedule,
+                      size: 12,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$pendingPostings',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+            
+            // Tasks summary
+            if (relevantTasks.isNotEmpty) ...[
+              if (relevantPostings.isNotEmpty) ...[
+                const SizedBox(width: 16),
+              ],
+              Row(
+                children: [
+                  Icon(
+                    Icons.assignment,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${relevantTasks.length} task${relevantTasks.length != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (completedTasks > 0) ...[
+                    Icon(
+                      Icons.check_circle,
+                      size: 12,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$completedTasks',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  if (pendingTasks > 0) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.radio_button_unchecked,
+                      size: 12,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$pendingTasks',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        ),
+        
+        // Alert for pending items
+        if (pendingPostings > 0 || pendingTasks > 0) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.warning_amber,
+                size: 12,
+                color: Colors.orange,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${pendingPostings + pendingTasks} pending item${(pendingPostings + pendingTasks) != 1 ? 's' : ''}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
