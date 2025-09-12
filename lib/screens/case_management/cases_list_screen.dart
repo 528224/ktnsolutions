@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../models/models.dart';
 import '../../services/case_service.dart';
 import 'add_case_screen.dart';
+import 'case_details_screen.dart';
 
 class CasesListScreen extends StatefulWidget {
   const CasesListScreen({super.key});
@@ -246,10 +247,10 @@ class _CasesListScreenState extends State<CasesListScreen> {
   }
 
   void _onCaseTap(LegalCase case_) {
-    // TODO: Navigate to case details screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Tapped on case: ${case_.title}'),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CaseDetailsScreen(legalCase: case_),
       ),
     );
   }

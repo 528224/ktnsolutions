@@ -6,6 +6,7 @@ class Posting {
   final DateTime date;
   final String staff;
   final String court;
+  final String note;
 
   Posting({
     required this.id,
@@ -13,6 +14,7 @@ class Posting {
     required this.date,
     required this.staff,
     required this.court,
+    this.note = '',
   });
 
   Map<String, dynamic> toJson() {
@@ -21,6 +23,7 @@ class Posting {
       'date': Timestamp.fromDate(date),
       'staff': staff,
       'court': court,
+      'note': note,
     };
   }
 
@@ -32,6 +35,7 @@ class Posting {
       date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       staff: data['staff'] ?? '',
       court: data['court'] ?? '',
+      note: data['note'] ?? '',
     );
   }
 
@@ -44,6 +48,7 @@ class Posting {
           : DateTime.parse(json['date']),
       staff: json['staff'] ?? '',
       court: json['court'] ?? '',
+      note: json['note'] ?? '',
     );
   }
 
@@ -53,6 +58,7 @@ class Posting {
     DateTime? date,
     String? staff,
     String? court,
+    String? note,
   }) {
     return Posting(
       id: id ?? this.id,
@@ -60,6 +66,7 @@ class Posting {
       date: date ?? this.date,
       staff: staff ?? this.staff,
       court: court ?? this.court,
+      note: note ?? this.note,
     );
   }
 }

@@ -10,7 +10,6 @@ class CaseService {
     try {
       final QuerySnapshot snapshot = await _firestore
           .collection(_collectionName)
-          .orderBy('createdAt', descending: true)
           .get();
 
       return snapshot.docs
@@ -25,7 +24,6 @@ class CaseService {
   static Stream<List<LegalCase>> getCasesStream() {
     return _firestore
         .collection(_collectionName)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => LegalCase.fromFirestore(doc))
@@ -106,7 +104,6 @@ class CaseService {
       final QuerySnapshot snapshot = await _firestore
           .collection(_collectionName)
           .where('doneDate', isNull: true)
-          .orderBy('createdAt', descending: true)
           .get();
 
       return snapshot.docs
@@ -140,7 +137,6 @@ class CaseService {
       final QuerySnapshot snapshot = await _firestore
           .collection(_collectionName)
           .where('clientName', isEqualTo: clientName)
-          .orderBy('createdAt', descending: true)
           .get();
 
       return snapshot.docs
