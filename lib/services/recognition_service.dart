@@ -5,16 +5,17 @@ class RecognitionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collectionName = 'recognitions';
 
-  // Get all recognitions sorted by published date
-  Stream<List<Recognition>> getRecognitions() {
-    return _firestore
-        .collection(_collectionName)
-        .orderBy('publishedDate', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Recognition.fromFirestore(doc))
-            .toList());
+  Future<List<Recognition>> getRecognitions() async {
+    final snapshot = await _firestore.collection(_collectionName).get();
+    final allItems = snapshot.docs.map((doc) => Recognition.fromFirestore(doc)).toList();
+
+    // Split into two lists
+    final withOrder = allItems.where((item) => item.order > 0).toList();
+    final withoutOrder = allItems.where((item) => item.order <= 0).toList();
+
+    return [...withOrder, ...withoutOrder];
   }
+
 
   // Get a single recognition by ID
   Future<Recognition?> getRecognition(String id) async {

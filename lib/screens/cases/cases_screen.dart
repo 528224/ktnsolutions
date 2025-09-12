@@ -105,259 +105,108 @@ class _CasesScreenState extends State<CasesScreen> with SingleTickerProviderStat
   
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Cases'),
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'Today'),
-              Tab(text: 'Upcoming'),
-              Tab(text: 'Past'),
-            ],
+    return SafeArea(
+      child: DefaultTabController(
+        length: 3,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Cases'),
+            elevation: 0,
+            bottom: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Today'),
+                Tab(text: 'Upcoming'),
+                Tab(text: 'Past'),
+              ],
+              labelColor: Theme.of(context).colorScheme.primary,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.6),
+            ),
           ),
+          body: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildCaseList(_todayCases),
+                      _buildCaseList(_upcomingCases),
+                      _buildCaseList(_pastCases),
+                    ],
+                  ),
+          floatingActionButton: _isAdmin
+              ? Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  ),
+                  child: FloatingActionButton(
+                    onPressed: _navigateToAddCase,
+                    child: const Icon(Icons.add),
+                  ),
+                )
+              : null,
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildCaseList(_todayCases, 'No cases scheduled for today'),
-                  _buildCaseList(_upcomingCases, 'No upcoming cases'),
-                  _buildCaseList(_pastCases, 'No past cases'),
-                ],
-              ),
-        floatingActionButton: _isAdmin
-            ? FloatingActionButton(
-                onPressed: _navigateToAddCase,
-                child: const Icon(Icons.add),
-              )
-            : null,
       ),
     );
   }
-  
-  Widget _buildCaseList(List<LegalCase> cases, String emptyMessage) {
+
+  Widget _buildCaseList(List<LegalCase> cases) {
     if (cases.isEmpty) {
-      return Center(
-        child: Text(
-          emptyMessage,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-        ),
+      return const Center(
+        child: Text('No cases found'),
       );
     }
-    
+
     return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: cases.length,
       itemBuilder: (context, index) {
         final legalCase = cases[index];
-        return _buildCaseCard(legalCase);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: _buildCaseCard(legalCase),
+        );
       },
     );
   }
-  
+
   Widget _buildCaseCard(LegalCase legalCase) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+      margin: EdgeInsets.zero,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
         onTap: () => _navigateToCaseDetail(legalCase),
-        onLongPress: _isAdmin ? () => _showCaseOptions(legalCase) : null,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      legalCase.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              Text(
+                legalCase.caseNumber,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(legalCase.status).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _formatStatus(legalCase.status),
-                      style: TextStyle(
-                        color: _getStatusColor(legalCase.status),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 8),
               Text(
-                'Case No: ${legalCase.caseNumber}',
-                style: Theme.of(context).textTheme.bodyMedium,
+                legalCase.title,
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Court: ${legalCase.courtName}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Client: ${legalCase.clientName}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Advocate: ${legalCase.advocateName}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 8),
-              if (legalCase.nextHearingDate != null) ...[
-                const Divider(height: 1),
+              if (legalCase.nextHearingDate != null) ...{
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Next Hearing: ${_formatDate(legalCase.nextHearingDate!)}\n${_formatTime(legalCase.nextHearingDate!)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[700],
-                          ),
-                    ),
-                  ],
+                Text(
+                  'Next Hearing: ${legalCase.nextHearingDate?.toLocal().toString().split('.')[0]}',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-              ],
+              },
             ],
           ),
         ),
       ),
     );
-  }
-  
-  void _showCaseOptions(LegalCase legalCase) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateToEditCase(legalCase);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Delete', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Navigator.pop(context);
-              _showDeleteConfirmation(legalCase);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-  
-  void _showDeleteConfirmation(LegalCase legalCase) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Case'),
-        content: const Text('Are you sure you want to delete this case? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deleteCase(legalCase);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Future<void> _deleteCase(LegalCase legalCase) async {
-    try {
-      await _caseService.deleteCase(legalCase.id);
-      await _loadCases();
-    } catch (e) {
-      debugPrint('Error deleting case: $e');
-      Get.snackbar('Error', 'Failed to delete case');
-    }
-  }
-  
-  Future<void> _navigateToEditCase(LegalCase legalCase) async {
-    final result = await Get.to<bool>(
-      () => AddEditCaseScreen(legalCase: legalCase),
-      fullscreenDialog: true,
-    );
-    
-    if (result == true) {
-      await _loadCases();
-    }
-  }
-  
-  Color _getStatusColor(CaseStatus status) {
-    switch (status) {
-      case CaseStatus.pending:
-        return Colors.orange;
-      case CaseStatus.inProgress:
-        return Colors.blue;
-      case CaseStatus.completed:
-        return Colors.green;
-      case CaseStatus.adjourned:
-        return Colors.purple;
-      case CaseStatus.dismissed:
-        return Colors.red;
-    }
-  }
-  
-  String _formatStatus(CaseStatus status) {
-    return status.toString().split('.').last;
-  }
-  
-  String _formatDate(DateTime date) {
-    return '${_getDayName(date.weekday)}, ${date.day} ${_getMonthName(date.month)} ${date.year}';
-  }
-  
-  String _formatTime(DateTime date) {
-    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final period = date.hour < 12 ? 'AM' : 'PM';
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$hour:$minute $period';
-  }
-  
-  String _getDayName(int weekday) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[weekday - 1];
-  }
-  
-  String _getMonthName(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return months[month - 1];
   }
 }

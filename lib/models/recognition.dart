@@ -1,27 +1,37 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+
+import '../rich_text_with_multiple_color.dart';
 
 class Recognition {
   final String id;
   final String title;
   final String description;
-  final String imageUrl;
+  final List<SubTextColor>? titleSubTextColors;
+  final List<SubTextColor>? descSubTextColors;
+  final List<String>? imageUrls;
   final String? link;
   final DateTime publishedDate;
+  final int order;
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<ItemWithLink>? itemsWithLink;
 
   Recognition({
     required this.id,
     required this.title,
     required this.description,
-    required this.imageUrl,
+    this.titleSubTextColors,
+    this.descSubTextColors,
+    this.imageUrls,
     this.link,
     required this.publishedDate,
+    this.order = 0,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
+    this.itemsWithLink,
   });
 
   // Convert Recognition to JSON
@@ -29,9 +39,13 @@ class Recognition {
     return {
       'title': title,
       'description': description,
-      'imageUrl': imageUrl,
+      'titleSubTextColors': titleSubTextColors?.map((e) => e.toSnapShot()).toList(),
+      'descSubTextColors': descSubTextColors?.map((e) => e.toSnapShot()).toList(),
+      'itemsWithLink': itemsWithLink?.map((e) => e.toSnapShot()).toList(),
+      if (imageUrls != null) 'imageUrls': imageUrls,
       'link': link,
       'publishedDate': Timestamp.fromDate(publishedDate),
+      'order': order,
       'createdBy': createdBy,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
@@ -45,12 +59,241 @@ class Recognition {
       id: doc.id,
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      imageUrl: data['imageUrl'] ?? '',
+      titleSubTextColors: (data['titleSubTextColors'] as List<dynamic>?)
+          ?.map((e) => SubTextColor.fromSnapshot(Map<String, dynamic>.from(e)))
+          .toList() ??
+          [],
+      descSubTextColors: (data['descSubTextColors'] as List<dynamic>?)
+          ?.map((e) => SubTextColor.fromSnapshot(Map<String, dynamic>.from(e)))
+          .toList() ??
+          [],
+      itemsWithLink: (data['itemsWithLink'] as List<dynamic>?)
+          ?.map((e) => ItemWithLink.fromSnapshot(Map<String, dynamic>.from(e)))
+          .toList() ??
+          [],
+      imageUrls: (data['imageUrls'] as List<dynamic>?)?.cast<String>(),
       link: data['link'],
-      publishedDate: (data['publishedDate'] as Timestamp).toDate(),
+      publishedDate: (data['publishedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      order: data['order'] ?? 0,
       createdBy: data['createdBy'],
-      createdAt: data['createdAt']?.toDate(),
-      updatedAt: data['updatedAt']?.toDate(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
     );
+  }
+
+  // Create a copy of the recognition with updated fields
+  Recognition copyWith({
+    String? id,
+    String? title,
+    String? description,
+    List<SubTextColor>? titleSubTextColors,
+    List<SubTextColor>? descSubTextColors,
+    List<String>? imageUrls,
+    String? link,
+    DateTime? publishedDate,
+    int? order,
+    String? createdBy,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<ItemWithLink>? itemsWithLink
+  }) {
+    return Recognition(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      titleSubTextColors: titleSubTextColors ?? this.titleSubTextColors,
+      descSubTextColors: descSubTextColors ?? this.descSubTextColors,
+      imageUrls: imageUrls ?? this.imageUrls,
+      link: link ?? this.link,
+      publishedDate: publishedDate ?? this.publishedDate,
+      order: order ?? this.order,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      itemsWithLink: itemsWithLink ?? this.itemsWithLink
+    );
+  }
+
+  // Format published date as 'dd/MM/yyyy'
+  String get formattedDate {
+    return DateFormat('dd/MM/yyyy').format(publishedDate);
+  }
+
+  // Extract title/domain from link if available
+  String? get sourceTitle {
+    if (link == null) return null;
+    
+    try {
+      Uri uri = Uri.parse(link!);
+      
+      // Handle Google redirect URLs
+      if (uri.host == 'www.google.com' && uri.path == '/url') {
+        final urlParam = uri.queryParameters['url'];
+        if (urlParam != null) {
+          try {
+            final decodedUrl = Uri.decodeFull(urlParam);
+            uri = Uri.parse(decodedUrl);
+          } catch (e) {
+            // If parsing fails, continue with main domain
+          }
+        }
+      }
+      
+      // Remove www. and return the domain
+      return uri.host.replaceFirst(RegExp('^www\\.'), '');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get subtitle/displayURL (formatted for UI)
+  String? get sourceSubTitle {
+    if (link == null) return null;
+
+    try {
+      final uri = Uri.parse(link!);
+
+      // Handle Google redirect URLs
+      if (uri.host == 'www.google.com' && uri.path == '/url') {
+        final urlParam = uri.queryParameters['url'];
+        if (urlParam != null) {
+          try {
+            final decodedUrl = Uri.decodeFull(urlParam);
+            final innerUri = Uri.parse(decodedUrl);
+            return _formatDisplayUrl(innerUri);
+          } catch (e) {
+            // If parsing fails, continue with main domain
+          }
+        }
+      }
+
+      return _formatDisplayUrl(uri);
+    } catch (e) {
+      return null;
+    }
+  }
+
+
+  // Get base URL for redirection (without path)
+  String? get sourceUrl {
+    if (link == null) return null;
+    
+    try {
+      Uri uri = Uri.parse(link!);
+      
+      // Handle Google redirect URLs
+      if (uri.host == 'www.google.com' && uri.path == '/url') {
+        final urlParam = uri.queryParameters['url'];
+        if (urlParam != null) {
+          try {
+            final decodedUrl = Uri.decodeFull(urlParam);
+            uri = Uri.parse(decodedUrl);
+          } catch (e) {
+            // If parsing fails, continue with main domain
+          }
+        }
+      }
+      
+      // Return the base URL with proper scheme
+      final scheme = uri.scheme.isNotEmpty ? uri.scheme : 'https';
+      return '$scheme://${uri.host}';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get favicon URL
+  String? get faviconUrl {
+    if (link == null) return null;
+    
+    try {
+      Uri uri = Uri.parse(link!);
+      
+      // Handle Google redirect URLs
+      if (uri.host == 'www.google.com' && uri.path == '/url') {
+        final urlParam = uri.queryParameters['url'];
+        if (urlParam != null) {
+          try {
+            final decodedUrl = Uri.decodeFull(urlParam);
+            uri = Uri.parse(decodedUrl);
+          } catch (e) {
+            // If parsing fails, continue with main domain
+          }
+        }
+      }
+      
+      return '${uri.scheme}://${uri.host}/favicon.ico';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Helper method to format display URL
+  String _formatDisplayUrl(Uri uri) {
+    final scheme = uri.scheme.isNotEmpty ? '${uri.scheme}://' : 'https://';
+    
+    // Special handling for judiciary.karnataka.gov.in
+    if (uri.host == 'judiciary.karnataka.gov.in') {
+      final pathSegments = uri.pathSegments;
+      if (pathSegments.isNotEmpty && pathSegments[0] == 'karjud' && pathSegments[1].startsWith('cino_det')) {
+        return '${scheme}judiciary.karnataka.gov.in › karjud › cino_det';
+      }
+    }
+    
+    // Special handling for ecourtsindia.com
+    if (uri.host == 'ecourtsindia.com') {
+      final pathSegments = uri.pathSegments;
+      if (pathSegments.isNotEmpty && pathSegments[0] == 'cnr' && pathSegments.length > 1) {
+        return '${scheme}ecourtsindia.com › cnr > ${pathSegments[1]}';
+      }
+    }
+    
+    // Default formatting for other URLs
+    final host = uri.host.replaceFirst('www.', '');
+    final path = uri.path.isNotEmpty ? ' › ${uri.path.split('/').where((s) => s.isNotEmpty).join(' › ')}' : '';
+    final fragment = uri.fragment.isNotEmpty ? ' #${uri.fragment}' : '';
+    
+    // Truncate if too long
+    final fullUrl = '$scheme$host$path$fragment';
+    return fullUrl.length > 50 ? '${fullUrl.substring(0, 47)}...' : fullUrl;
+  }
+
+  // Check if the recognition has a valid link
+  bool get hasValidLink => link != null && Uri.tryParse(link!) != null;
+
+  // Check if the recognition is empty
+  bool get isEmpty => id.isEmpty;
+
+  // Check if the recognition is not empty
+  bool get isNotEmpty => !isEmpty;
+
+  // Create an empty recognition
+  static Recognition empty() {
+    return Recognition(
+      id: '',
+      title: '',
+      description: '',
+      publishedDate: DateTime.now(),
+      order: 0,
+    );
+  }
+}
+
+class ItemWithLink {
+  String name = '';
+  String link = ''; // Store color as hex string like "#FF2196F3"
+
+  ItemWithLink({required this.name, required this.link});
+
+  ItemWithLink.fromSnapshot(Map<String, dynamic> snapshot) {
+    name = snapshot.containsKey("name") ? snapshot["name"] : '';
+    link = snapshot.containsKey("link") ? snapshot["link"] : '';
+  }
+
+  Map<String, dynamic> toSnapShot() {
+    return {
+      "name": name,
+      "link": link,
+    };
   }
 }

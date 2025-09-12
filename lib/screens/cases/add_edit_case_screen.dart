@@ -189,275 +189,277 @@ class _AddEditCaseScreenState extends State<AddEditCaseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Case' : 'Add New Case'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _submitForm,
-            child: _isLoading 
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Save'),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Case Title
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Case Title *',
-                        border: OutlineInputBorder(),
-                        hintText: 'E.g., Smith vs. Johnson',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a case title';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Case Number
-                    TextFormField(
-                      controller: _caseNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'Case Number *',
-                        border: OutlineInputBorder(),
-                        hintText: 'E.g., CR-2023-1234',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a case number';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Court Name
-                    TextFormField(
-                      controller: _courtNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Court Name *',
-                        border: OutlineInputBorder(),
-                        hintText: 'E.g., Supreme Court of India',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a court name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Client Details
-                    const Text(
-                      'Client Details',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    TextFormField(
-                      controller: _clientNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Client Name *',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter client name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    TextFormField(
-                      controller: _clientContactController,
-                      decoration: const InputDecoration(
-                        labelText: 'Client Contact *',
-                        border: OutlineInputBorder(),
-                        hintText: 'Phone number or email',
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter client contact';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Advocate Details
-                    const Text(
-                      'Advocate Details',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    TextFormField(
-                      controller: _advocateNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Advocate Name *',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter advocate name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    TextFormField(
-                      controller: _advocateContactController,
-                      decoration: const InputDecoration(
-                        labelText: 'Advocate Contact',
-                        border: OutlineInputBorder(),
-                        hintText: 'Phone number or email (optional)',
-                      ),
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Next Hearing Date & Time
-                    const Text(
-                      'Next Hearing',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _selectDate,
-                            icon: const Icon(Icons.calendar_today),
-                            label: Text(
-                              _nextHearingDate != null
-                                  ? _formatDate(_nextHearingDate!)
-                                  : 'Select Date',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              alignment: Alignment.centerLeft,
-                            ),
-                          ),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_isEditMode ? 'Edit Case' : 'Add New Case'),
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : _submitForm,
+              child: _isLoading 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Case Title
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Case Title *',
+                          border: OutlineInputBorder(),
+                          hintText: 'E.g., Smith vs. Johnson',
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _nextHearingDate != null ? _selectTime : null,
-                            icon: const Icon(Icons.access_time),
-                            label: Text(
-                              _nextHearingTime != null
-                                  ? _formatTime(_nextHearingTime!)
-                                  : 'Select Time',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              alignment: Alignment.centerLeft,
-                            ),
-                          ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a case title';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Case Number
+                      TextFormField(
+                        controller: _caseNumberController,
+                        decoration: const InputDecoration(
+                          labelText: 'Case Number *',
+                          border: OutlineInputBorder(),
+                          hintText: 'E.g., CR-2023-1234',
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Status
-                    const Text(
-                      'Status',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a case number';
+                          }
+                          return null;
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    
-                    DropdownButtonFormField<CaseStatus>(
-                      value: _selectedStatus,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const SizedBox(height: 16),
+                      
+                      // Court Name
+                      TextFormField(
+                        controller: _courtNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Court Name *',
+                          border: OutlineInputBorder(),
+                          hintText: 'E.g., Supreme Court of India',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a court name';
+                          }
+                          return null;
+                        },
                       ),
-                      items: CaseStatus.values.map((status) {
-                        return DropdownMenuItem<CaseStatus>(
-                          value: status,
-                          child: Text(
-                            status.toString().split('.').last,
-                            style: TextStyle(
-                              color: _getStatusColor(status),
+                      const SizedBox(height: 16),
+                      
+                      // Client Details
+                      const Text(
+                        'Client Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _clientNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Client Name *',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter client name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _clientContactController,
+                        decoration: const InputDecoration(
+                          labelText: 'Client Contact *',
+                          border: OutlineInputBorder(),
+                          hintText: 'Phone number or email',
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter client contact';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Advocate Details
+                      const Text(
+                        'Advocate Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _advocateNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Advocate Name *',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter advocate name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _advocateContactController,
+                        decoration: const InputDecoration(
+                          labelText: 'Advocate Contact',
+                          border: OutlineInputBorder(),
+                          hintText: 'Phone number or email (optional)',
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Next Hearing Date & Time
+                      const Text(
+                        'Next Hearing',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _selectDate,
+                              icon: const Icon(Icons.calendar_today),
+                              label: Text(
+                                _nextHearingDate != null
+                                    ? _formatDate(_nextHearingDate!)
+                                    : 'Select Date',
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                alignment: Alignment.centerLeft,
+                              ),
                             ),
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedStatus = value;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Notes
-                    TextFormField(
-                      controller: _notesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes',
-                        border: OutlineInputBorder(),
-                        alignLabelWithHint: true,
-                        hintText: 'Additional notes about the case',
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _nextHearingDate != null ? _selectTime : null,
+                              icon: const Icon(Icons.access_time),
+                              label: Text(
+                                _nextHearingTime != null
+                                    ? _formatTime(_nextHearingTime!)
+                                    : 'Select Time',
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                alignment: Alignment.centerLeft,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 4,
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Save Button
-                    ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      const SizedBox(height: 16),
+                      
+                      // Status
+                      const Text(
+                        'Status',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text(_isEditMode ? 'Update Case' : 'Add Case'),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      
+                      DropdownButtonFormField<CaseStatus>(
+                        value: _selectedStatus,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: CaseStatus.values.map((status) {
+                          return DropdownMenuItem<CaseStatus>(
+                            value: status,
+                            child: Text(
+                              status.toString().split('.').last,
+                              style: TextStyle(
+                                color: _getStatusColor(status),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedStatus = value;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Notes
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes',
+                          border: OutlineInputBorder(),
+                          alignLabelWithHint: true,
+                          hintText: 'Additional notes about the case',
+                        ),
+                        maxLines: 4,
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Save Button
+                      ElevatedButton(
+                        onPressed: _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(_isEditMode ? 'Update Case' : 'Add Case'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
   

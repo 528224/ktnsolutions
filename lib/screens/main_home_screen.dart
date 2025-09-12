@@ -35,30 +35,52 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star),
-            label: 'Recognitions',
+    return SafeArea(
+      child: Scaffold(
+        extendBody: true, // For better bottom navigation bar with edge-to-edge
+        body: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: _pages,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.cases),
-            label: 'Cases',
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.1),
+                width: 1.0,
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Reports',
+          child: SafeArea(
+            top: false,
+            minimum: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewPadding.bottom > 0
+                  ? 0
+                  : 16, // Add bottom padding only if there's no system padding
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+              elevation: 0,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.star),
+                  label: 'Recognitions',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.cases),
+                  label: 'Cases',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.analytics),
+                  label: 'Reports',
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

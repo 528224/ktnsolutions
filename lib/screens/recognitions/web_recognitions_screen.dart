@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
-import 'package:octo_image/octo_image.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../rich_text_with_multiple_color.dart';
+import '../../widgets/user_profile.dart';
 
 class WebRecognitionsScreen extends StatelessWidget {
   final RecognitionService _recognitionService = RecognitionService();
@@ -12,148 +13,282 @@ class WebRecognitionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Our Recognitions'),
-        centerTitle: true,
-        elevation: 0,
+    return SafeArea(
+      child: Scaffold(
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-      ),
-      body: Container(
-        color: Colors.grey[50],
-        child: StreamBuilder<List<Recognition>>(
-          stream: _recognitionService.getRecognitions(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('Error loading recognitions: ${snapshot.error}'),
-              );
-            }
+        // appBar: AppBar(
+        //   title: const Text('Our Recognitions'),
+        //   centerTitle: true,
+        //   elevation: 0,
+        //   backgroundColor: Colors.white,
+        //   foregroundColor: Colors.black87,
+        // ),
+        body: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+          child:
+          SingleChildScrollView(
+            child: Column(children: [
+                AdvocateProfile(
+                  name: "Adv. PRABHU K N",
+                  designation: "Supreme Court & All High Courts",
+                  firmName: "KTN Solutions Lawyers",
+                  email: "ktnsolutionslawyers@gmail.com",
+                  phoneNumbers: ["9388118177", "9544322000"],
+                  offices: [
+                    "Chamber No.D 422, D Block, Additional Building Complex, Supreme Court, New Delhi - 110 001",
+                    "4th Floor, Peace Tower, Opp North Gate Of Collectorate & District Panchayath Ayyanthole, Thrissur - 680 003",
+                    "2nd Floor, Delma Express, Opposite Cherupushpam Girls Higher Secondary School, Vadakkencherry, Palakkad - 678 683",
+                  ],
+                ),
+                FutureBuilder<List<Recognition>>(
+                    future: _recognitionService.getRecognitions(), // 👈 now returns Future
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error loading recognitions: ${snapshot.error}'),
+                        );
+                      }
 
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-            final recognitions = snapshot.data ?? [];
+                      final recognitions = snapshot.data ?? [];
 
-            if (recognitions.isEmpty) {
-              return const Center(
-                child: Text('No recognitions available at the moment'),
-              );
-            }
+                      if (recognitions.isEmpty) {
+                        return const Center(
+                          child: Text('No recognitions available at the moment'),
+                        );
+                      }
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 1200 
-                    ? 3 
-                    : constraints.maxWidth > 800 ? 2 : 1;
-                
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
-                    childAspectRatio: 0.8,
-                    mainAxisExtent: 400, // Fixed height for all cards
+                      return ListView.separated(
+                        shrinkWrap: true, // let it fit inside parent ListView
+                        physics: NeverScrollableScrollPhysics(), // Disable inner scrolling
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 0),
+                        itemCount: recognitions.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16.0),
+                        itemBuilder: (context, index) {
+                          return _buildRecognitionCard(recognitions[index], context);
+                        },
+                      );
+                    },
                   ),
-                  itemCount: recognitions.length,
-                  itemBuilder: (context, index) {
-                    return _buildRecognitionCard(recognitions[index]);
-                  },
-                );
-              },
-            );
-          },
+              ],)
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildRecognitionCard(Recognition recognition) {
+  Widget _buildRecognitionCard(Recognition recognition, BuildContext context) {
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(8.0),
+        side: BorderSide(color: Colors.grey[200]!),
       ),
+      margin: EdgeInsets.zero,
       child: InkWell(
-        onTap: recognition.link != null && recognition.link!.isNotEmpty
-            ? () => _launchURL(recognition.link!)
-            : null,
-        borderRadius: BorderRadius.circular(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 7,
-              child: _buildImageWidget(recognition),
-            ),
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
+        onTap: recognition.hasValidLink ? () => _launchURL(recognition.link!) : null,
+        borderRadius: BorderRadius.circular(8.0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Source info row with favicon and URL
+              if (recognition.hasValidLink) ...[
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      recognition.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      recognition.description,
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 14,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (recognition.link != null && recognition.link!.isNotEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          'View Details →',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                    // Left: favicon + titles
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap: recognition.sourceUrl != null
+                                ? () => _launchURL(recognition.sourceUrl!)
+                                : null,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: recognition.faviconUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: Image.network(
+                                        recognition.faviconUrl!,
+                                        width: 32,
+                                        height: 32,
+                                        errorBuilder: (context, error, stackTrace) => 
+                                            const Icon(Icons.public, size: 20, color: Colors.grey),
+                                      ),
+                                    )
+                                  : const Icon(Icons.public, size: 20, color: Colors.grey),
+                            ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (recognition.sourceTitle != null)
+                                  Text(
+                                    recognition.sourceTitle!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                if (recognition.sourceSubTitle != null)
+                                  Text(
+                                    recognition.sourceSubTitle!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Right: date
+                    Text(
+                      recognition.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (!recognition.hasValidLink) ...[
+                Row(
+                  children: [
+                    const Spacer(),
+                    Text(
+                      recognition.formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              getRunningMultiColorText(recognition.title, isMulticolor: true,
+                  isRunning: false, subTextColors: recognition.titleSubTextColors??[],
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  )),
+
+              // Images if available
+              if (recognition.imageUrls != null && recognition.imageUrls!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                if (recognition.imageUrls!.length == 1) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      recognition.imageUrls!.first,
+                      width: double.infinity,
+                      height: 300,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 300,
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
                         ),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  // Multiple images - show in a grid
+                  SizedBox(
+                    height: 300,
+                    child: GridView.builder(
+                      scrollDirection: Axis.horizontal,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 1,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: recognition.imageUrls!.length,
+                      itemBuilder: (context, index) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.network(
+                            recognition.imageUrls![index],
+                            width: 300,
+                            height: 300,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 300,
+                              color: Colors.grey[100],
+                              child: const Center(
+                                child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
+
+              const SizedBox(height: 8),
+
+              // Description
+              if (recognition.description.isNotEmpty)
+                getRunningMultiColorText(recognition.description, isMulticolor: true,
+                  isRunning: false, subTextColors: recognition.descSubTextColors??[],
+                  textStyle: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[800],
+                    height: 1.4,),),
+
+              const SizedBox(height: 12),
+
+              // Items with Link buttons (bottom of card)
+              if ((recognition.itemsWithLink ?? []).isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final item in recognition.itemsWithLink!)
+                      _ItemLinkButton(
+                        title: (item.name).isNotEmpty ? item.name : 'Open',
+                        url: item.link,
+                        onTap: (item.link).trim().isNotEmpty ? () => _launchURL(item.link) : null,
                       ),
                   ],
                 ),
-              ),
-            ),
-          ],
+                const SizedBox(height: 12),
+              ],
+              
+              // Bottom row removed (View Source deleted)
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildImageWidget(Recognition recognition) {
-    if (recognition.imageUrl.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
-        ),
-        child: const Center(
-          child: Icon(Icons.image_not_supported_outlined, size: 50, color: Colors.grey),
-        ),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
-      child: getRemoteImageForWeb(recognition.imageUrl,),
     );
   }
 
@@ -165,21 +300,27 @@ class WebRecognitionsScreen extends StatelessWidget {
       );
     }
   }
+
 }
 
-getRemoteImageForWeb(String url) {
-  return OctoImage(
-    image: NetworkImage(url),
-    progressIndicatorBuilder: (context, progress) {
-      double? value;
-      var expectedBytes = progress?.expectedTotalBytes;
-      if (progress != null && expectedBytes != null) {
-        value = progress.cumulativeBytesLoaded / expectedBytes;
-      }
-      return Center(child: CircularProgressIndicator(value: value));
-    },
-    errorBuilder: (context, error, stacktrace) {
-      return Icon(Icons.error);
-      },
-  );
+class _ItemLinkButton extends StatelessWidget {
+  final String title;
+  final String url;
+  final VoidCallback? onTap;
+
+  const _ItemLinkButton({required this.title, required this.url, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        side: BorderSide(color: Theme.of(context).primaryColor.withValues(alpha: 0.5)),
+      ),
+      icon: const Icon(Icons.link, size: 16),
+      label: Text(title, overflow: TextOverflow.ellipsis),
+    );
+  }
 }

@@ -128,151 +128,153 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Event' : 'Add New Event'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _submitForm,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Save'),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Event Type
-                    DropdownButtonFormField<EventType>(
-                      value: _selectedEventType,
-                      decoration: const InputDecoration(
-                        labelText: 'Event Type *',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: EventType.values.map((type) {
-                        return DropdownMenuItem<EventType>(
-                          value: type,
-                          child: Text(
-                            type.toString().split('.').last,
-                            style: TextStyle(
-                              color: _getEventColor(type),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _selectedEventType = value);
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null) return 'Please select an event type';
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Event Title
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title *',
-                        border: OutlineInputBorder(),
-                        hintText: 'E.g., First Hearing, Document Submission',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Date & Time
-                    const Text(
-                      'Date & Time *',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _selectDate,
-                            icon: const Icon(Icons.calendar_today),
-                            label: Text(_formatDate(_eventDate)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              alignment: Alignment.centerLeft,
-                            ),
-                          ),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_isEditMode ? 'Edit Event' : 'Add New Event'),
+          actions: [
+            TextButton(
+              onPressed: _isLoading ? null : _submitForm,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Event Type
+                      DropdownButtonFormField<EventType>(
+                        value: _selectedEventType,
+                        decoration: const InputDecoration(
+                          labelText: 'Event Type *',
+                          border: OutlineInputBorder(),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _selectTime,
-                            icon: const Icon(Icons.access_time),
-                            label: Text(_formatTime(_eventTime)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              alignment: Alignment.centerLeft,
+                        items: EventType.values.map((type) {
+                          return DropdownMenuItem<EventType>(
+                            value: type,
+                            child: Text(
+                              type.toString().split('.').last,
+                              style: TextStyle(
+                                color: _getEventColor(type),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _selectedEventType = value);
+                          }
+                        },
+                        validator: (value) {
+                          if (value == null) return 'Please select an event type';
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Event Title
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Title *',
+                          border: OutlineInputBorder(),
+                          hintText: 'E.g., First Hearing, Document Submission',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a title';
+                          }
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Date & Time
+                      const Text(
+                        'Date & Time *',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _selectDate,
+                              icon: const Icon(Icons.calendar_today),
+                              label: Text(_formatDate(_eventDate)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                alignment: Alignment.centerLeft,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _selectTime,
+                              icon: const Icon(Icons.access_time),
+                              label: Text(_formatTime(_eventTime)),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                alignment: Alignment.centerLeft,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Description
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(),
+                          hintText: 'Add any additional details about this event',
+                          alignLabelWithHint: true,
                         ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Description
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(),
-                        hintText: 'Add any additional details about this event',
-                        alignLabelWithHint: true,
+                        maxLines: 4,
                       ),
-                      maxLines: 4,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Save Button
-                    ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Save Button
+                      ElevatedButton(
+                        onPressed: _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(_isEditMode ? 'Update Event' : 'Add Event'),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text(_isEditMode ? 'Update Event' : 'Add Event'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
   
