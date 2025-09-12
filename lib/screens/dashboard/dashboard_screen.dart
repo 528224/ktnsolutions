@@ -412,94 +412,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 if (hasRelevantItems) ...[
                   const SizedBox(height: 8),
-                  _buildCollapsedSummary(relevantPostings, relevantTasks, startDate, endDate),
+                  _buildSimplifiedSummary(relevantPostings, relevantTasks, startDate, endDate),
                 ],
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (hasRelevantItems) ...[
-                      // Postings count
-                      if (relevantPostings.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.event,
-                                size: 12,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${relevantPostings.length}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      // Tasks count
-                      if (relevantTasks.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.assignment,
-                                size: 12,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${relevantTasks.length}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                    ],
-                    // Case status
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: case_.isCompleted 
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        case_.isCompleted ? 'Completed' : 'Active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: case_.isCompleted ? Colors.green : Colors.orange,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
             if (isExpanded && hasRelevantItems) ...[
@@ -530,140 +444,205 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildCollapsedSummary(List<Posting> relevantPostings, List<Task> relevantTasks, DateTime startDate, DateTime endDate) {
+  Widget _buildSimplifiedSummary(List<Posting> relevantPostings, List<Task> relevantTasks, DateTime startDate, DateTime endDate) {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
     final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
     
-    // Filter postings for today
-    final todayPostings = relevantPostings.where((posting) {
+    // Get today's posting (should be only one)
+    final todayPosting = relevantPostings.where((posting) {
       return posting.date.isAfter(todayStart.subtract(const Duration(minutes: 1))) && 
              posting.date.isBefore(todayEnd.add(const Duration(minutes: 1)));
+    }).firstOrNull;
+    
+    // Group tasks by status and today's due date
+    final todayTasks = relevantTasks.where((task) {
+      return task.dueDate.isAfter(todayStart.subtract(const Duration(minutes: 1))) && 
+             task.dueDate.isBefore(todayEnd.add(const Duration(minutes: 1)));
     }).toList();
     
-    // Count completed vs pending items
-    int completedPostings = 0;
-    int pendingPostings = 0;
-    int completedTasks = 0;
-    int pendingTasks = 0;
-    
-    for (final posting in relevantPostings) {
-      // Check if posting is completed (it's in previousPostings)
-      bool isCompleted = false;
-      for (final case_ in _cases) {
-        if (case_.previousPostings.any((p) => p.id == posting.id)) {
-          isCompleted = true;
-          break;
-        }
-      }
-      if (isCompleted) {
-        completedPostings++;
-      } else {
-        pendingPostings++;
-      }
-    }
-    
-    for (final task in relevantTasks) {
-      if (task.isCompleted) {
-        completedTasks++;
-      } else {
-        pendingTasks++;
-      }
-    }
+    final completedTodayTasks = todayTasks.where((task) => task.isCompleted).toList();
+    final pendingTodayTasks = todayTasks.where((task) => !task.isCompleted).toList();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Today's postings with titles
-        if (todayPostings.isNotEmpty) ...[
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_today,
-                size: 14,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Today: ${todayPostings.length} posting${todayPostings.length != 1 ? 's' : ''}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Show posting titles for today
-          ...todayPostings.map((posting) => _buildCollapsedPostingItem(posting)),
+        // Today's posting (single)
+        if (todayPosting != null) ...[
+          _buildTodayPostingItem(todayPosting),
           const SizedBox(height: 8),
         ],
         
-        // Status indicators for completed vs pending
-        if (completedPostings > 0 || pendingPostings > 0 || completedTasks > 0 || pendingTasks > 0) ...[
-          Row(
-            children: [
-              if (completedPostings > 0) ...[
-                Icon(
-                  Icons.check_circle,
-                  size: 12,
-                  color: Colors.green,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '$completedPostings completed',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.green,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-              if (pendingPostings > 0) ...[
-                if (completedPostings > 0) const SizedBox(width: 8),
-                Icon(
-                  Icons.schedule,
-                  size: 12,
-                  color: Colors.orange,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '$pendingPostings pending',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.orange,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-        
-        // Alert for pending items
-        if (pendingPostings > 0 || pendingTasks > 0) ...[
-          const SizedBox(height: 4),
+        // Today's tasks grouped by status
+        if (todayTasks.isNotEmpty) ...[
           Row(
             children: [
               Icon(
-                Icons.warning_amber,
-                size: 12,
-                color: Colors.orange,
+                Icons.assignment,
+                size: 14,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               ),
               const SizedBox(width: 4),
               Text(
-                '${pendingPostings + pendingTasks} pending item${(pendingPostings + pendingTasks) != 1 ? 's' : ''}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.orange,
+                'Tasks Today:',
+                style: TextStyle(
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              // Completed tasks
+              ...completedTodayTasks.map((task) => _buildTaskChip(task.title, true)),
+              // Pending tasks
+              ...pendingTodayTasks.map((task) => _buildTaskChip(task.title, false)),
             ],
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildTodayPostingItem(Posting posting) {
+    // Check if posting is completed
+    bool isCompleted = false;
+    for (final case_ in _cases) {
+      if (case_.previousPostings.any((p) => p.id == posting.id)) {
+        isCompleted = true;
+        break;
+      }
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isCompleted 
+            ? Colors.green.withOpacity(0.1)
+            : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isCompleted 
+              ? Colors.green.withOpacity(0.3)
+              : Colors.orange.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isCompleted ? Icons.check_circle : Icons.schedule,
+            size: 16,
+            color: isCompleted ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  posting.title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+                  ),
+                ),
+                Text(
+                  '${posting.staff} • ${posting.court}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskChip(String title, bool isCompleted) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isCompleted 
+            ? Colors.green.withOpacity(0.1)
+            : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isCompleted 
+              ? Colors.green.withOpacity(0.3)
+              : Colors.orange.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 12,
+            color: isCompleted ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCollapsedItemChip(String title, bool isCompleted, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: isCompleted 
+            ? Colors.green.withOpacity(0.1)
+            : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isCompleted 
+              ? Colors.green.withOpacity(0.3)
+              : Colors.orange.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 10,
+            color: isCompleted ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
