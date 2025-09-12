@@ -61,7 +61,7 @@ class MyApp extends StatelessWidget {
         }
         
         // If user is logged in, show main navigation
-        if (snapshot.hasData) {
+        if (snapshot.hasData && FirebaseAuth.instance.currentUser?.phoneNumber?.isNotEmpty == true) {
           return const MainHomeScreen();
         }
         

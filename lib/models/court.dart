@@ -19,10 +19,22 @@ class Court {
 
 // Global list of courts
 final List<Court> globalCourts = [
-  Court(
-    name: 'Court1',
-  ),
-  Court(
-    name: 'Court2',
-  ),
+  Court(name: 'Supreme Court of India'),
+  Court(name: 'Delhi High Court'),
+  Court(name: 'Kerala High Court'),
+  Court(name: 'Karnataka High Court'),
+  Court(name: 'Tamil Nadu High Court'),
+  Court(name: 'Maharashtra High Court'),
+  Court(name: 'Gujarat High Court'),
+  Court(name: 'Rajasthan High Court'),
+  Court(name: 'Punjab & Haryana High Court'),
+  Court(name: 'Madhya Pradesh High Court'),
+  Court(name: 'District Court - Thrissur'),
+  Court(name: 'District Court - Palakkad'),
+  Court(name: 'District Court - Ernakulam'),
+  Court(name: 'District Court - Kozhikode'),
+  Court(name: 'Family Court'),
+  Court(name: 'Consumer Court'),
+  Court(name: 'Labour Court'),
+  Court(name: 'Other'),
 ];

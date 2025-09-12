@@ -69,4 +69,10 @@ final List<User> globalUsers = [
     mobile: '+919846476909',
     isAdmin: false,
   ),
+  User(
+    id: '3',
+    name: 'Simjo',
+    mobile: '+911234567890',
+    isAdmin: true,
+  ),
 ];

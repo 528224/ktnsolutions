@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/models.dart';
+import '../../models/court.dart';
+import '../../services/case_service.dart';
 
-class CaseDetailsScreen extends StatelessWidget {
+class CaseDetailsScreen extends StatefulWidget {
   final LegalCase legalCase;
 
   const CaseDetailsScreen({
@@ -11,26 +14,60 @@ class CaseDetailsScreen extends StatelessWidget {
   });
 
   @override
+  State<CaseDetailsScreen> createState() => _CaseDetailsScreenState();
+}
+
+class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
+  late LegalCase _currentCase;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCase = widget.legalCase;
+  }
+
+  bool get _isAdmin {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser?.phoneNumber == null) return false;
+    
+    // Check if current user is admin by matching phone number
+    return globalUsers.any((user) => 
+        user.mobile == currentUser!.phoneNumber && user.isAdmin);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(legalCase.title),
+        title: Text(_currentCase.title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCaseHeader(),
-            const SizedBox(height: 24),
-            _buildNextPostingSection(context),
-            const SizedBox(height: 24),
-            _buildDueTasksSection(context),
-            const SizedBox(height: 24),
-            _buildTimelineSection(context),
-          ],
-        ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCaseHeader(),
+                const SizedBox(height: 24),
+                _buildNextPostingSection(context),
+                const SizedBox(height: 24),
+                _buildDueTasksSection(context),
+                const SizedBox(height: 24),
+                _buildTimelineSection(context),
+              ],
+            ),
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -43,23 +80,35 @@ class CaseDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              legalCase.title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _currentCase.title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (_isAdmin)
+                  IconButton(
+                    onPressed: () => _showEditCaseDialog(),
+                    icon: const Icon(Icons.edit),
+                    tooltip: 'Edit Case Details',
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Client: ${legalCase.clientName}',
+              'Client: ${_currentCase.clientName}',
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
             ),
             Text(
-              'Client Number: ${legalCase.clientNumber}',
+              'Client Number: ${_currentCase.clientNumber}',
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
@@ -75,7 +124,7 @@ class CaseDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${legalCase.completedTasksCount}/${legalCase.totalTasksCount} tasks completed',
+                  '${_currentCase.completedTasksCount}/${_currentCase.totalTasksCount} tasks completed',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.green[700],
@@ -91,7 +140,7 @@ class CaseDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildNextPostingSection(BuildContext context) {
-    final nextPosting = legalCase.nextPosting;
+    final nextPosting = _currentCase.nextPosting;
     
     return Card(
       elevation: 2,
@@ -107,14 +156,22 @@ class CaseDetailsScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Next Posting',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                Expanded(
+                  child: Text(
+                    'Next Posting',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
+                if (_isAdmin)
+                  IconButton(
+                    onPressed: () => _showEditNextPostingDialog(),
+                    icon: const Icon(Icons.edit),
+                    tooltip: 'Edit Next Posting',
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -184,7 +241,7 @@ class CaseDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildDueTasksSection(BuildContext context) {
-    final dueTasks = legalCase.tasks.where((task) => !task.isCompleted).toList();
+    final dueTasks = _currentCase.tasks.where((task) => !task.isCompleted).toList();
     final overdueTasks = dueTasks.where((task) => task.dueDate.isBefore(DateTime.now())).toList();
     
     return Card(
@@ -201,17 +258,19 @@ class CaseDetailsScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Due Tasks',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.secondary,
+                Expanded(
+                  child: Text(
+                    'Due Tasks',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 if (overdueTasks.isNotEmpty)
                   Container(
+                    margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.red,
@@ -225,6 +284,12 @@ class CaseDetailsScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ),
+                if (_isAdmin)
+                  IconButton(
+                    onPressed: () => _showEditTasksDialog(),
+                    icon: const Icon(Icons.edit),
+                    tooltip: 'Edit Tasks',
                   ),
               ],
             ),
@@ -309,7 +374,7 @@ class CaseDetailsScreen extends StatelessWidget {
     final List<TimelineItem> timelineItems = [];
     
     // Add previous postings
-    for (final posting in legalCase.previousPostings) {
+    for (final posting in _currentCase.previousPostings) {
       timelineItems.add(TimelineItem(
         type: TimelineItemType.posting,
         date: posting.date,
@@ -321,7 +386,7 @@ class CaseDetailsScreen extends StatelessWidget {
     }
     
     // Add tasks with done dates
-    for (final task in legalCase.tasks.where((task) => task.doneDate != null)) {
+    for (final task in _currentCase.tasks.where((task) => task.doneDate != null)) {
       timelineItems.add(TimelineItem(
         type: TimelineItemType.taskCompleted,
         date: task.doneDate!,
@@ -512,6 +577,382 @@ class CaseDetailsScreen extends StatelessWidget {
         return 'POSTING';
       case TimelineItemType.taskCompleted:
         return 'TASK COMPLETED';
+    }
+  }
+
+  // Edit Dialog Methods
+  Future<void> _showEditCaseDialog() async {
+    final titleController = TextEditingController(text: _currentCase.title);
+    final clientNameController = TextEditingController(text: _currentCase.clientName);
+    final clientNumberController = TextEditingController(text: _currentCase.clientNumber);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Case Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Case Title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: clientNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Client Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: clientNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Client Number',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await _updateCase(
+        title: titleController.text.trim(),
+        clientName: clientNameController.text.trim(),
+        clientNumber: clientNumberController.text.trim(),
+      );
+    }
+  }
+
+  Future<void> _showEditNextPostingDialog() async {
+    final nextPosting = _currentCase.nextPosting;
+    final titleController = TextEditingController(text: nextPosting?.title ?? '');
+    final noteController = TextEditingController(text: nextPosting?.note ?? '');
+    DateTime selectedDate = nextPosting?.date ?? DateTime.now();
+    
+    // Initialize dropdown values
+    String? selectedCourt = nextPosting?.court;
+    String? selectedStaff = nextPosting?.staff;
+    
+    // Check if the existing court value exists in our court list
+    if (selectedCourt != null && !globalCourts.any((court) => court.name == selectedCourt)) {
+      selectedCourt = null; // Reset to null if court not found in list
+    }
+    
+    // Check if the existing staff value exists in our staff list
+    if (selectedStaff != null && !globalUsers.any((user) => user.name == selectedStaff)) {
+      selectedStaff = null; // Reset to null if staff not found in list
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit Next Posting'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Posting Title',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (nextPosting?.court != null && selectedCourt == null)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      border: Border.all(color: Colors.orange[300]!),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange[700], size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Current court "${nextPosting?.court}" is not in the list. Please select a new one.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                DropdownButtonFormField<String>(
+                  value: selectedCourt,
+                  decoration: const InputDecoration(
+                    labelText: 'Court',
+                    border: OutlineInputBorder(),
+                    hintText: 'Select court',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Select Court'),
+                    ),
+                    ...globalCourts.map((court) {
+                      return DropdownMenuItem(
+                        value: court.name,
+                        child: Text(court.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCourt = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (nextPosting?.staff != null && selectedStaff == null)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      border: Border.all(color: Colors.orange[300]!),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange[700], size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Current staff "${nextPosting?.staff}" is not in the list. Please select a new one.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                DropdownButtonFormField<String>(
+                  value: selectedStaff,
+                  decoration: const InputDecoration(
+                    labelText: 'Staff',
+                    border: OutlineInputBorder(),
+                    hintText: 'Select staff',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Select Staff'),
+                    ),
+                    ...globalUsers.map((user) {
+                      return DropdownMenuItem(
+                        value: user.name,
+                        child: Text(user.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedStaff = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Note',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text('Date'),
+                  subtitle: Text(DateFormat('MMM dd, yyyy').format(selectedDate)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setState(() {
+                        selectedDate = date;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      await _updateNextPosting(
+        title: titleController.text.trim(),
+        court: selectedCourt ?? '',
+        staff: selectedStaff ?? '',
+        note: noteController.text.trim(),
+        date: selectedDate,
+      );
+    }
+  }
+
+  Future<void> _showEditTasksDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Tasks'),
+        content: const Text('Task editing functionality will be implemented here.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Update Methods
+  Future<void> _updateCase({
+    required String title,
+    required String clientName,
+    required String clientNumber,
+  }) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final updatedCase = _currentCase.copyWith(
+        title: title,
+        clientName: clientName,
+        clientNumber: clientNumber,
+      );
+
+      await CaseService.updateCase(_currentCase.id, updatedCase);
+
+      setState(() {
+        _currentCase = updatedCase;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Case details updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating case: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateNextPosting({
+    required String title,
+    required String court,
+    required String staff,
+    required String note,
+    required DateTime date,
+  }) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final updatedPosting = Posting(
+        id: _currentCase.nextPosting?.id ?? '',
+        title: title,
+        court: court,
+        staff: staff,
+        note: note,
+        date: date,
+      );
+
+      final updatedCase = _currentCase.copyWith(
+        nextPosting: updatedPosting,
+      );
+
+      await CaseService.updateCase(_currentCase.id, updatedCase);
+
+      setState(() {
+        _currentCase = updatedCase;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Next posting updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating posting: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
