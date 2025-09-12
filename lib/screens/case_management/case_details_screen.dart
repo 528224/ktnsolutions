@@ -116,7 +116,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     icon: const Icon(Icons.edit),
                     tooltip: 'Edit Case Details',
                   ),
-                if (_isAdmin && _currentCase.nextPosting == null && !_currentCase.isCompleted)
+                if (_isAdmin && _currentCase.nextPosting == null && !_currentCase.isCompleted && _currentCase.tasks.every((task) => task.isCompleted))
                   IconButton(
                     onPressed: () => _showMarkAsDoneDialog(),
                     icon: const Icon(Icons.check_circle_outline),
@@ -222,7 +222,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     ),
                   ),
                 ),
-                if (_isAdmin && !_currentCase.isCompleted)
+                if (_isAdmin && !_currentCase.isCompleted && _currentCase.nextPosting != null)
                   IconButton(
                     onPressed: () => _showEditNextPostingDialog(),
                     icon: const Icon(Icons.edit),
@@ -357,9 +357,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   ),
                 if (_isAdmin && !_currentCase.isCompleted)
                   IconButton(
-                    onPressed: () => _showEditTasksDialog(),
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Edit Tasks',
+                    onPressed: () => _showAddTaskDialog(),
+                    icon: const Icon(Icons.add_circle),
+                    tooltip: 'Add New Task',
+                    color: Colors.blue,
                   ),
               ],
             ),
@@ -434,6 +435,22 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
               ],
             ),
           ),
+          if (_isAdmin && !_currentCase.isCompleted) ...[
+            IconButton(
+              onPressed: () => _showEditTaskDialog(task),
+              icon: const Icon(Icons.edit),
+              iconSize: 18,
+              tooltip: 'Edit Task',
+            ),
+            if (!task.isCompleted)
+              IconButton(
+                onPressed: () => _showCompleteTaskDialog(task),
+                icon: const Icon(Icons.check_circle),
+                iconSize: 18,
+                tooltip: 'Mark as Complete',
+                color: Colors.green,
+              ),
+          ],
         ],
       ),
     );
@@ -1005,20 +1022,273 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     }
   }
 
-  Future<void> _showEditTasksDialog() async {
+  Future<void> _showAddTaskDialog() async {
+    final titleController = TextEditingController();
+    DateTime selectedDueDate = DateTime.now().add(const Duration(days: 7));
+    String? selectedStaff;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add New Task'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Task Title *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedStaff,
+                  decoration: const InputDecoration(
+                    labelText: 'Assign to Staff',
+                    border: OutlineInputBorder(),
+                    hintText: 'Select staff',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Select Staff'),
+                    ),
+                    ...globalUsers.map((user) {
+                      return DropdownMenuItem(
+                        value: user.name,
+                        child: Text(user.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedStaff = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text('Due Date'),
+                  subtitle: Text(DateFormat('MMM dd, yyyy').format(selectedDueDate)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDueDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setState(() {
+                        selectedDueDate = date;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Task title is required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Add Task'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      final newTask = Task(
+        id: '',
+        title: titleController.text.trim(),
+        staff: selectedStaff ?? '',
+        dueDate: selectedDueDate,
+      );
+
+      await _addNewTask(newTask);
+    }
+  }
+
+  Future<void> _showEditTaskDialog(Task task) async {
+    final titleController = TextEditingController(text: task.title);
+    DateTime selectedDueDate = task.dueDate;
+    String? selectedStaff = task.staff;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit Task'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Task Title *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedStaff,
+                  decoration: const InputDecoration(
+                    labelText: 'Assign to Staff',
+                    border: OutlineInputBorder(),
+                    hintText: 'Select staff',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Select Staff'),
+                    ),
+                    ...globalUsers.map((user) {
+                      return DropdownMenuItem(
+                        value: user.name,
+                        child: Text(user.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedStaff = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: const Text('Due Date'),
+                  subtitle: Text(DateFormat('MMM dd, yyyy').format(selectedDueDate)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDueDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setState(() {
+                        selectedDueDate = date;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Task title is required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      final updatedTask = task.copyWith(
+        title: titleController.text.trim(),
+        staff: selectedStaff ?? '',
+        dueDate: selectedDueDate,
+      );
+
+      await _updateTask(updatedTask);
+    }
+  }
+
+  Future<void> _showCompleteTaskDialog(Task task) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Tasks'),
-        content: const Text('Task editing functionality will be implemented here.'),
+        title: const Text('Complete Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to mark this task as completed?',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Task: ${task.title}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Due: ${DateFormat('MMM dd, yyyy').format(task.dueDate)}'),
+                  Text('Staff: ${task.staff}'),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Mark Complete'),
           ),
         ],
       ),
     );
+
+    if (result == true) {
+      await _completeTask(task);
+    }
   }
 
   Future<void> _showCompletePostingDialog() async {
@@ -1656,6 +1926,133 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error marking case as completed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _addNewTask(Task task) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final updatedTasks = List<Task>.from(_currentCase.tasks)..add(task);
+      final updatedCase = _currentCase.copyWith(tasks: updatedTasks);
+
+      await CaseService.updateCase(_currentCase.id, updatedCase);
+
+      setState(() {
+        _currentCase = updatedCase;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('New task added successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding new task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateTask(Task updatedTask) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final updatedTasks = _currentCase.tasks.map((task) {
+        return task.id == updatedTask.id ? updatedTask : task;
+      }).toList();
+
+      final updatedCase = _currentCase.copyWith(tasks: updatedTasks);
+
+      await CaseService.updateCase(_currentCase.id, updatedCase);
+
+      setState(() {
+        _currentCase = updatedCase;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _completeTask(Task task) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final completedTask = task.copyWith(doneDate: DateTime.now());
+      final updatedTasks = _currentCase.tasks.map((t) {
+        return t.id == task.id ? completedTask : t;
+      }).toList();
+
+      final updatedCase = _currentCase.copyWith(tasks: updatedTasks);
+
+      await CaseService.updateCase(_currentCase.id, updatedCase);
+
+      setState(() {
+        _currentCase = updatedCase;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task marked as completed!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error completing task: $e'),
             backgroundColor: Colors.red,
           ),
         );
