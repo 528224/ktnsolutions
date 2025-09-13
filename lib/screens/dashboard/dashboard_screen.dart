@@ -411,23 +411,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSimplifiedSummary(List<Posting> relevantPostings, List<Task> relevantTasks, DateTime startDate, DateTime endDate) {
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    final todayEnd = DateTime(today.year, today.month, today.day + 1,);
-    
-    // Get today's posting (should be only one)
-    final todayPosting = relevantPostings.where((posting) {
-      return posting.date.isAfter(todayStart.subtract(const Duration(minutes: 1))) && 
-             posting.date.isBefore(todayEnd);
-    }).firstOrNull;
-    
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Today's posting (single)
-        if (todayPosting != null) ...[
-          _buildTodayPostingItem(todayPosting, relevantPostings),
+        // All postings within the selected date range
+        if (relevantPostings.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(
+                Icons.event,
+                size: 14,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Postings:',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ...relevantPostings.map((posting) => _buildPostingItem(posting)),
           const SizedBox(height: 8),
         ],
         
@@ -467,7 +475,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTodayPostingItem(Posting posting, List<Posting> relevantPostings) {
+  Widget _buildPostingItem(Posting posting) {
     // Check if posting is completed
     // A posting is completed if it's in the previousPostings list
     // A posting is pending if it's the nextPosting
@@ -489,17 +497,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
     
+    // Define colors based on posting status
+    final Color backgroundColor = isCompleted 
+        ? Colors.green.withOpacity(0.15)  // Completed postings - green
+        : Colors.blue.withOpacity(0.15);  // Pending postings - blue
+    
+    final Color borderColor = isCompleted 
+        ? Colors.green.withOpacity(0.4)
+        : Colors.blue.withOpacity(0.4);
+    
+    final Color iconColor = isCompleted 
+        ? Colors.green.shade600
+        : Colors.blue.shade600;
+    
+    final Color textColor = isCompleted 
+        ? Colors.green.shade700
+        : Colors.blue.shade700;
+    
     return Container(
+      margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isCompleted 
-            ? Colors.green.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isCompleted 
-              ? Colors.green.withOpacity(0.3)
-              : Colors.orange.withOpacity(0.3),
+          color: borderColor,
           width: 1.5,
         ),
       ),
@@ -510,7 +532,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Icon(
               isCompleted ? Icons.check_circle : Icons.schedule,
               size: 16,
-              color: isCompleted ? Colors.green : Colors.orange,
+              color: iconColor,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -522,11 +544,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+                      color: textColor,
                     ),
                   ),
                   Text(
-                    '${posting.staff} • ${posting.court}',
+                    '${posting.staff} • ${posting.court} • ${DateFormat('MMM dd').format(posting.date)}',
                     style: TextStyle(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),

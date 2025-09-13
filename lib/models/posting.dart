@@ -19,6 +19,7 @@ class Posting {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'date': Timestamp.fromDate(date),
       'staff': staff,
