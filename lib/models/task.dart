@@ -17,6 +17,7 @@ class Task {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'staff': staff,
       'dueDate': Timestamp.fromDate(dueDate),
