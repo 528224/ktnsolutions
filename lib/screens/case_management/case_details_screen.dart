@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../models/court.dart';
 import '../../services/case_service.dart';
@@ -1118,7 +1119,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
     if (result == true) {
       final newTask = Task(
-        id: '',
+        id: Uuid().v4(),
         title: titleController.text.trim(),
         staff: selectedStaff ?? '',
         dueDate: selectedDueDate,
@@ -1462,7 +1463,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       Posting? newPosting;
       if (addNewPosting && newPostingTitleController.text.trim().isNotEmpty) {
         newPosting = Posting(
-          id: '',
+          id: Uuid().v4(),
           title: newPostingTitleController.text.trim(),
           court: selectedCourt ?? '',
           staff: selectedStaff ?? '',
@@ -1611,7 +1612,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
 
     if (result == true) {
       final newPosting = Posting(
-        id: '',
+        id: Uuid().v4(),
         title: titleController.text.trim(),
         court: selectedCourt ?? '',
         staff: selectedStaff ?? '',

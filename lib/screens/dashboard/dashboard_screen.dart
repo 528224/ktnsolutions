@@ -405,12 +405,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildSimplifiedSummary(List<Posting> relevantPostings, List<Task> relevantTasks, DateTime startDate, DateTime endDate) {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-    final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+    final todayEnd = DateTime(today.year, today.month, today.day + 1,);
     
     // Get today's posting (should be only one)
     final todayPosting = relevantPostings.where((posting) {
       return posting.date.isAfter(todayStart.subtract(const Duration(minutes: 1))) && 
-             posting.date.isBefore(todayEnd.add(const Duration(minutes: 1)));
+             posting.date.isBefore(todayEnd);
     }).firstOrNull;
     
     

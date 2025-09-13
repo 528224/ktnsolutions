@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../services/case_service.dart';
 
@@ -537,7 +538,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
       Posting? posting;
       if (hasPostingTitle && hasPostingCourt && hasPostingStaff && hasPostingDate) {
         posting = Posting(
-          id: '', // Will be set by Firestore
+          id: Uuid().v4(), // Will be set by Firestore
           title: _postingTitleController.text.trim(),
           date: _postingDate!,
           staff: _selectedStaff!,
@@ -552,7 +553,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
               taskData.dueDate != null)
           .map((taskData) {
         return Task(
-          id: '', // Will be set by Firestore
+          id: Uuid().v4(),
           title: taskData.titleController.text.trim(),
           staff: taskData.selectedStaff ?? 'Unassigned',
           dueDate: taskData.dueDate!,

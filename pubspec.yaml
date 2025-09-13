@@ -50,6 +50,7 @@ dependencies:
   syncfusion_flutter_charts: ^30.2.6
   intl:
   octo_image:
+  uuid:
 
 dev_dependencies:
   flutter_test:
