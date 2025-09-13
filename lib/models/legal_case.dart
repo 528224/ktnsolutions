@@ -87,12 +87,13 @@ class LegalCase {
     String? clientNumber,
     List<Task>? tasks,
     DateTime? doneDate,
+    bool clearNextPosting = false,
   }) {
     return LegalCase(
       id: id ?? this.id,
       title: title ?? this.title,
       previousPostings: previousPostings ?? this.previousPostings,
-      nextPosting: nextPosting ?? this.nextPosting,
+      nextPosting: clearNextPosting ? null : (nextPosting ?? this.nextPosting),
       clientName: clientName ?? this.clientName,
       clientNumber: clientNumber ?? this.clientNumber,
       tasks: tasks ?? this.tasks,
@@ -130,6 +131,7 @@ class LegalCase {
     return copyWith(
       previousPostings: updatedPreviousPostings,
       nextPosting: newPosting,
+      clearNextPosting: newPosting == null,
     );
   }
 

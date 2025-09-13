@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../services/case_service.dart';
 
@@ -589,160 +590,381 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _completePosting(Posting posting) async {
-    try {
-      // Find the case that contains this posting as nextPosting
-      for (final case_ in _cases) {
-        if (case_.nextPosting?.id == posting.id) {
-          // Complete the posting using the CaseService
-          await CaseService.completePosting(
-            caseId: case_.id,
-            completionNote: 'Completed via dashboard',
-            newPosting: null, // This will set nextPosting to null
-          );
-          
-          // Refresh the UI
-          _loadCases();
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Posting marked as completed'),
-                backgroundColor: Colors.green,
-              ),
+    final completionNoteController = TextEditingController();
+    bool addNewPosting = false;
+    
+    // New posting fields
+    final newPostingTitleController = TextEditingController();
+    final newPostingNoteController = TextEditingController();
+    DateTime newPostingDate = DateTime.now();
+    String? selectedCourt;
+    String? selectedStaff;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Complete Posting'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Posting: ${posting.title}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Date: ${DateFormat('MMM dd, yyyy').format(posting.date)}'),
+                      Text('Court: ${posting.court}'),
+                      Text('Staff: ${posting.staff}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: completionNoteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Completion Note *',
+                    border: OutlineInputBorder(),
+                    hintText: 'Describe what was accomplished',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Add New Posting'),
+                  subtitle: const Text('Create a new posting after completing this one'),
+                  value: addNewPosting,
+                  onChanged: (value) {
+                    setState(() {
+                      addNewPosting = value ?? false;
+                    });
+                  },
+                ),
+                if (addNewPosting) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'New Posting Details',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPostingTitleController,
+                    decoration: const InputDecoration(
+                      labelText: 'New Posting Title',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCourt,
+                    decoration: const InputDecoration(
+                      labelText: 'Court',
+                      border: OutlineInputBorder(),
+                      hintText: 'Select court',
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Select Court'),
+                      ),
+                      ...globalCourts.map((court) {
+                        return DropdownMenuItem(
+                          value: court.name,
+                          child: Text(court.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCourt = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedStaff,
+                    decoration: const InputDecoration(
+                      labelText: 'Staff',
+                      border: OutlineInputBorder(),
+                      hintText: 'Select staff',
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Select Staff'),
+                      ),
+                      ...globalUsers.map((user) {
+                        return DropdownMenuItem(
+                          value: user.name,
+                          child: Text(user.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedStaff = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPostingNoteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Note',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: const Text('Date'),
+                    subtitle: Text(DateFormat('MMM dd, yyyy').format(newPostingDate)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: newPostingDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        setState(() {
+                          newPostingDate = date;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (completionNoteController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Completion note is required'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Complete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true) {
+      Posting? newPosting;
+      if (addNewPosting && newPostingTitleController.text.trim().isNotEmpty) {
+        newPosting = Posting(
+          id: Uuid().v4(),
+          title: newPostingTitleController.text.trim(),
+          court: selectedCourt ?? '',
+          staff: selectedStaff ?? '',
+          note: newPostingNoteController.text.trim(),
+          date: newPostingDate,
+        );
+      }
+
+      try {
+        // Find the case that contains this posting as nextPosting
+        for (final case_ in _cases) {
+          if (case_.nextPosting?.id == posting.id) {
+            // Complete the posting using the CaseService
+            await CaseService.completePosting(
+              caseId: case_.id,
+              completionNote: completionNoteController.text.trim(),
+              newPosting: newPosting,
             );
+            
+            // Refresh the UI
+            _loadCases();
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(newPosting != null 
+                      ? 'Posting completed and new posting added successfully!'
+                      : 'Posting completed successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+            return; // Exit after successful completion
           }
-          return; // Exit after successful completion
         }
-      }
-      
-      // If we reach here, the posting was not found as nextPosting
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Posting not found or already completed'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error completing posting: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        
+        // If we reach here, the posting was not found as nextPosting
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Posting not found or already completed'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error completing posting: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
 
   Future<void> _toggleTaskCompletion(String taskTitle, bool currentStatus) async {
-    try {
-      // Find the case and task to update
-      for (final case_ in _cases) {
-        final taskIndex = case_.tasks.indexWhere((task) => task.title == taskTitle);
-        if (taskIndex != -1) {
-          final task = case_.tasks[taskIndex];
-          final updatedTask = task.copyWith(
-            doneDate: currentStatus ? null : DateTime.now(),
-          );
-          
-          // Create updated tasks list
-          final updatedTasks = List<Task>.from(case_.tasks);
-          updatedTasks[taskIndex] = updatedTask;
-          
-          // Update the case with new tasks while preserving all other data
-          final updatedCase = case_.copyWith(tasks: updatedTasks);
-          
-          // Update in Firestore
-          await CaseService.updateCase(case_.id, updatedCase);
-          
-          // Refresh the UI
-          _loadCases();
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  currentStatus 
-                      ? 'Task marked as pending' 
-                      : 'Task marked as completed',
-                ),
-                backgroundColor: currentStatus ? Colors.orange : Colors.green,
-              ),
-            );
-          }
-          break;
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating task: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-
-  Widget _buildCollapsedPostingItem(Posting posting) {
-    // Check if posting is completed by looking through all cases
-    bool isCompleted = false;
+    // Find the case and task first
+    Task? taskToUpdate;
+    LegalCase? caseToUpdate;
+    
     for (final case_ in _cases) {
-      if (case_.previousPostings.any((p) => p.id == posting.id)) {
-        isCompleted = true;
+      final taskIndex = case_.tasks.indexWhere((task) => task.title == taskTitle);
+      if (taskIndex != -1) {
+        taskToUpdate = case_.tasks[taskIndex];
+        caseToUpdate = case_;
         break;
       }
     }
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isCompleted 
-            ? Colors.green.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isCompleted 
-              ? Colors.green.withOpacity(0.3)
-              : Colors.orange.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isCompleted ? Icons.check_circle : Icons.schedule,
-            size: 12,
-            color: isCompleted ? Colors.green : Colors.orange,
+    if (taskToUpdate == null || caseToUpdate == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task not found'),
+            backgroundColor: Colors.red,
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              posting.title,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: isCompleted ? Colors.green.shade700 : Colors.orange.shade700,
+        );
+      }
+      return;
+    }
+
+    // Show confirmation dialog
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(currentStatus ? 'Mark Task as Pending' : 'Complete Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              currentStatus 
+                  ? 'Are you sure you want to mark this task as pending?'
+                  : 'Are you sure you want to mark this task as completed?',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: currentStatus ? Colors.orange[50] : Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: currentStatus ? Colors.orange[200]! : Colors.green[200]!),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Task: ${taskToUpdate?.title}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Due: ${DateFormat('MMM dd, yyyy').format(taskToUpdate!.dueDate)}'),
+                  Text('Staff: ${taskToUpdate?.staff}'),
+                ],
+              ),
             ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
           ),
-          Text(
-            DateFormat('HH:mm').format(posting.date),
-            style: TextStyle(
-              fontSize: 10,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: currentStatus ? Colors.orange : Colors.green,
+              foregroundColor: Colors.white,
             ),
+            child: Text(currentStatus ? 'Mark Pending' : 'Mark Complete'),
           ),
         ],
       ),
     );
+
+    if (result == true) {
+      try {
+        final updatedTask = taskToUpdate.copyWith(
+          doneDate: currentStatus ? null : DateTime.now(),
+        );
+        
+        // Create updated tasks list
+        final updatedTasks = List<Task>.from(caseToUpdate.tasks);
+        final taskIndex = updatedTasks.indexWhere((task) => task.title == taskTitle);
+        updatedTasks[taskIndex] = updatedTask;
+        
+        // Update the case with new tasks while preserving all other data
+        final updatedCase = caseToUpdate.copyWith(tasks: updatedTasks);
+        
+        // Update in Firestore
+        await CaseService.updateCase(caseToUpdate.id, updatedCase);
+        
+        // Refresh the UI
+        _loadCases();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                currentStatus 
+                    ? 'Task marked as pending' 
+                    : 'Task marked as completed',
+              ),
+              backgroundColor: currentStatus ? Colors.orange : Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating task: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
 
