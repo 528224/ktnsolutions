@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ktnsolutions/constants/profile_constants.dart';
 import 'package:ktnsolutions/models/home_details.dart';
+import 'package:ktnsolutions/models/user.dart';
+import 'package:ktnsolutions/models/court.dart';
 import 'package:ktnsolutions/services/home_details_service.dart';
 import 'package:ktnsolutions/utils/profile_initializer.dart';
 import 'package:ktnsolutions/widgets/user_profile.dart';
@@ -63,10 +65,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final homeDetails = await _homeDetailsService.getHomeDetails();
       
-      setState(() {
-        _homeDetails = homeDetails;
-        _isLoading = false;
-      });
+      // Loaded data successfully
+      
+      // If homeDetails exists but has empty users or courts, initialize with defaults
+      if (homeDetails != null && (homeDetails.usersList.isEmpty || homeDetails.courtList.isEmpty)) {
+        final updatedHomeDetails = HomeDetails(
+          id: homeDetails.id,
+          profileData: homeDetails.profileData,
+          usersList: homeDetails.usersList.isNotEmpty ? homeDetails.usersList : ProfileConstants.defaultUsers,
+          courtList: homeDetails.courtList.isNotEmpty ? homeDetails.courtList : ProfileConstants.defaultCourts,
+          createdAt: homeDetails.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        
+        // Save the updated data with defaults
+        await _homeDetailsService.saveHomeDetails(updatedHomeDetails);
+        
+        setState(() {
+          _homeDetails = updatedHomeDetails;
+          _isLoading = false;
+        });
+      } else if (homeDetails != null) {
+        // Clean up any duplicates in existing data
+        final cleanedCourts = _removeDuplicateCourts(homeDetails.courtList);
+        
+        if (cleanedCourts.length != homeDetails.courtList.length) {
+          // Duplicates were found and removed, save the cleaned data
+          final updatedHomeDetails = homeDetails.copyWith(
+            courtList: cleanedCourts,
+            updatedAt: DateTime.now(),
+          );
+          
+          await _homeDetailsService.saveHomeDetails(updatedHomeDetails);
+          
+          setState(() {
+            _homeDetails = updatedHomeDetails;
+            _isLoading = false;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Removed ${homeDetails.courtList.length - cleanedCourts.length} duplicate courts')),
+            );
+          }
+        } else {
+          setState(() {
+            _homeDetails = homeDetails;
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _homeDetails = homeDetails;
+          _isLoading = false;
+        });
+      }
 
       // Initialize form controllers with current data or defaults
       _initializeControllers();
@@ -142,11 +195,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         offices: offices,
       );
 
+      // Preserve existing users and courts, or initialize with defaults if empty
+      List<UserDetails> usersList = _homeDetails?.usersList ?? [];
+      List<Court> courtList = _homeDetails?.courtList ?? [];
+      
+      // If lists are empty, initialize with defaults
+      if (usersList.isEmpty || courtList.isEmpty) {
+        final defaultData = await _homeDetailsService.getHomeDetails();
+        if (defaultData != null) {
+          usersList = defaultData.usersList.isNotEmpty ? defaultData.usersList : ProfileConstants.defaultUsers;
+          courtList = defaultData.courtList.isNotEmpty ? defaultData.courtList : ProfileConstants.defaultCourts;
+        } else {
+          usersList = ProfileConstants.defaultUsers;
+          courtList = ProfileConstants.defaultCourts;
+        }
+      }
+
       final updatedHomeDetails = HomeDetails(
         id: _homeDetails?.id ?? '',
         profileData: updatedProfileData,
-        usersList: _homeDetails?.usersList ?? [],
-        courtList: _homeDetails?.courtList ?? [],
+        usersList: usersList,
+        courtList: courtList,
         createdAt: _homeDetails?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -225,6 +294,315 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+
+  // User Management Methods
+  Future<void> _addUser() async {
+    final result = await _showUserDialog();
+    if (result != null) {
+      await _saveUserData(result);
+    }
+  }
+
+  Future<void> _editUser(UserDetails user) async {
+    final result = await _showUserDialog(user: user);
+    if (result != null) {
+      await _saveUserData(result, existingUser: user);
+    }
+  }
+
+  Future<void> _deleteUser(UserDetails user) async {
+    final confirmed = await _showDeleteConfirmation(
+      title: 'Delete User',
+      message: 'Are you sure you want to delete ${user.name}?',
+    );
+    
+    if (confirmed) {
+      await _saveUserData(null, existingUser: user);
+    }
+  }
+
+  Future<void> _saveUserData(UserDetails? newUser, {UserDetails? existingUser}) async {
+    if (_homeDetails == null) return;
+
+    List<UserDetails> updatedUsers = List.from(_homeDetails!.usersList);
+    
+    if (existingUser != null) {
+      // Edit or delete existing user
+      final index = updatedUsers.indexWhere((u) => u.id == existingUser.id);
+      if (index != -1) {
+        if (newUser != null) {
+          // Update user
+          updatedUsers[index] = newUser;
+        } else {
+          // Delete user
+          updatedUsers.removeAt(index);
+        }
+      }
+    } else if (newUser != null) {
+      // Add new user
+      updatedUsers.add(newUser);
+    }
+
+    final updatedHomeDetails = _homeDetails!.copyWith(
+      usersList: updatedUsers,
+      updatedAt: DateTime.now(),
+    );
+
+    await _homeDetailsService.saveHomeDetails(updatedHomeDetails);
+    
+    setState(() {
+      _homeDetails = updatedHomeDetails;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(existingUser == null 
+            ? (newUser == null ? 'User deleted successfully' : 'User added successfully')
+            : 'User updated successfully'
+          ),
+        ),
+      );
+    }
+  }
+
+  // Court Management Methods
+  Future<void> _addCourt() async {
+    final result = await _showCourtDialog();
+    if (result != null) {
+      await _saveCourtData(result);
+    }
+  }
+
+  Future<void> _editCourt(Court court) async {
+    final result = await _showCourtDialog(court: court);
+    if (result != null) {
+      await _saveCourtData(result, existingCourt: court);
+    }
+  }
+
+  Future<void> _deleteCourt(Court court) async {
+    final confirmed = await _showDeleteConfirmation(
+      title: 'Delete Court',
+      message: 'Are you sure you want to delete ${court.name}?',
+    );
+    
+    if (confirmed) {
+      await _saveCourtData(null, existingCourt: court);
+    }
+  }
+
+  Future<void> _saveCourtData(Court? newCourt, {Court? existingCourt}) async {
+    if (_homeDetails == null) return;
+
+    List<Court> updatedCourts = List.from(_homeDetails!.courtList);
+    
+    if (existingCourt != null) {
+      // Edit or delete existing court
+      final index = updatedCourts.indexWhere((c) => c.name == existingCourt.name);
+      if (index != -1) {
+        if (newCourt != null) {
+          // Update court
+          updatedCourts[index] = newCourt;
+        } else {
+          // Delete court
+          updatedCourts.removeAt(index);
+        }
+      }
+    } else if (newCourt != null) {
+      // Add new court - check for duplicates first
+      final existingIndex = updatedCourts.indexWhere((c) => c.name == newCourt.name);
+      if (existingIndex == -1) {
+        // No duplicate found, add the court
+        updatedCourts.add(newCourt);
+      } else {
+        // Duplicate found, show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Court "${newCourt.name}" already exists')),
+          );
+        }
+        return;
+      }
+    }
+
+    // Remove any duplicates that might exist
+    updatedCourts = _removeDuplicateCourts(updatedCourts);
+
+    final updatedHomeDetails = _homeDetails!.copyWith(
+      courtList: updatedCourts,
+      updatedAt: DateTime.now(),
+    );
+
+    await _homeDetailsService.saveHomeDetails(updatedHomeDetails);
+    
+    setState(() {
+      _homeDetails = updatedHomeDetails;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(existingCourt == null 
+            ? (newCourt == null ? 'Court deleted successfully' : 'Court added successfully')
+            : 'Court updated successfully'
+          ),
+        ),
+      );
+    }
+  }
+
+  // Helper method to remove duplicate courts
+  List<Court> _removeDuplicateCourts(List<Court> courts) {
+    final Map<String, Court> uniqueCourts = {};
+    for (final court in courts) {
+      uniqueCourts[court.name] = court;
+    }
+    return uniqueCourts.values.toList();
+  }
+
+  // Dialog Methods
+  Future<UserDetails?> _showUserDialog({UserDetails? user}) async {
+    final nameController = TextEditingController(text: user?.name ?? '');
+    final mobileController = TextEditingController(text: user?.mobile ?? '');
+    bool isAdmin = user?.isAdmin ?? false;
+
+    return showDialog<UserDetails>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(user == null ? 'Add User' : 'Edit User'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: mobileController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mobile Number',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Admin User'),
+                  value: isAdmin,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      isAdmin = value ?? false;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                final mobile = mobileController.text.trim();
+                
+                if (name.isEmpty || mobile.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill in all fields')),
+                  );
+                  return;
+                }
+
+                final newUser = UserDetails(
+                  id: user?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                  name: name,
+                  mobile: mobile,
+                  isAdmin: isAdmin,
+                );
+
+                Navigator.of(context).pop(newUser);
+              },
+              child: Text(user == null ? 'Add' : 'Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<Court?> _showCourtDialog({Court? court}) async {
+    final nameController = TextEditingController(text: court?.name ?? '');
+
+    return showDialog<Court>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(court == null ? 'Add Court' : 'Edit Court'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Court Name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter court name')),
+                );
+                return;
+              }
+
+              final newCourt = Court(name: name);
+              Navigator.of(context).pop(newCourt);
+            },
+            child: Text(court == null ? 'Add' : 'Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _showDeleteConfirmation({required String title, required String message}) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -239,7 +617,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         surfaceTintColor: Colors.transparent,
         actions: [
           if (_isEditing) ...[
@@ -250,8 +628,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: _isSaving 
-                        ? const Color(0xFF94A3B8).withOpacity(0.1)
-                        : const Color(0xFF10B981).withOpacity(0.1),
+                        ? const Color(0xFF94A3B8).withValues(alpha: 0.1)
+                        : const Color(0xFF10B981).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: _isSaving 
@@ -276,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withOpacity(0.1),
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -296,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -363,7 +741,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.1),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Center(
@@ -409,7 +787,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -441,7 +819,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -457,7 +835,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withOpacity(0.1),
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -491,7 +869,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF6366F1).withOpacity(0.3),
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -575,7 +953,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withOpacity(0.1),
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: IconButton(
@@ -591,10 +969,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -628,7 +1006,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withOpacity(0.1),
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: IconButton(
@@ -644,10 +1022,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -682,7 +1060,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ? null
                   : [
                       BoxShadow(
-                        color: const Color(0xFF10B981).withOpacity(0.3),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -757,7 +1135,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -773,7 +1151,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -889,6 +1267,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildUsersView() {
     final users = _homeDetails?.usersList ?? [];
     
+    // Building users view
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
@@ -904,7 +1284,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -920,7 +1300,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -947,6 +1327,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       fontSize: 14,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _addUser,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.person_add_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Add New User',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -955,7 +1381,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 16),
           
           // Users List
-          ...users.map((user) => Container(
+          if (users.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.people_outline,
+                    size: 48,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No users found',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Users will appear here once data is loaded',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...users.map((user) => Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -966,7 +1431,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -975,8 +1440,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: user.isAdmin 
-                    ? const Color(0xFF6366F1).withOpacity(0.1)
-                    : const Color(0xFF10B981).withOpacity(0.1),
+                    ? const Color(0xFF6366F1).withValues(alpha: 0.1)
+                    : const Color(0xFF10B981).withValues(alpha: 0.1),
                 child: Icon(
                   user.isAdmin ? Icons.admin_panel_settings : Icons.person,
                   color: user.isAdmin ? const Color(0xFF6366F1) : const Color(0xFF10B981),
@@ -1005,7 +1470,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -1019,6 +1484,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                 ],
               ),
+              trailing: PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _editUser(user);
+                      break;
+                    case 'delete':
+                      _deleteUser(user);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded, color: Color(0xFF6366F1), size: 20),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_rounded, color: Color(0xFFEF4444), size: 20),
+                        SizedBox(width: 8),
+                        Text('Delete'),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.more_vert_rounded,
+                    color: Color(0xFF64748B),
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
           )),
         ],
@@ -1028,6 +1539,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildCourtsView() {
     final courts = _homeDetails?.courtList ?? [];
+    
+    // Building courts view
     
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
@@ -1044,7 +1557,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1060,7 +1573,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withOpacity(0.1),
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -1087,6 +1600,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       fontSize: 14,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _addCourt,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.add_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Add New Court',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1095,7 +1654,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 16),
           
           // Courts List
-          ...courts.map((court) => Container(
+          if (courts.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.gavel_outlined,
+                    size: 48,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No courts found',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Courts will appear here once data is loaded',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...courts.map((court) => Container(
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -1106,7 +1704,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -1116,7 +1714,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withOpacity(0.1),
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -1132,10 +1730,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: Color(0xFF1E293B),
                 ),
               ),
-              trailing: const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Color(0xFF94A3B8),
+              trailing: PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _editCourt(court);
+                      break;
+                    case 'delete':
+                      _deleteCourt(court);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded, color: Color(0xFF6366F1), size: 20),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_rounded, color: Color(0xFFEF4444), size: 20),
+                        SizedBox(width: 8),
+                        Text('Delete'),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.more_vert_rounded,
+                    color: Color(0xFF64748B),
+                    size: 20,
+                  ),
+                ),
               ),
             ),
           )),

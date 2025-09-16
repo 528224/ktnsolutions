@@ -23,14 +23,6 @@ Future<void> main() async {
     if (currentFirebaseAuthUser?.uid == null) {
       await FirebaseAuth.instance.signInAnonymously();
     }
-    
-    // Initialize all Firestore collections for web (optional - app will work with defaults if this fails)
-    try {
-      await FirestoreInitializer.initializeHomeDetails();
-      print('Firestore collections initialized successfully');
-    } catch (e) {
-      print('Note: Using default data (Firestore initialization failed: $e)');
-    }
   }
 
   runApp(const MyApp());
