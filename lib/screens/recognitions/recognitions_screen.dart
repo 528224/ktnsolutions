@@ -255,17 +255,6 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
               
               const SizedBox(height: 8),
               
-              // Description
-              if (recognition.description.isNotEmpty)
-                getRunningMultiColorText(recognition.description, isMulticolor: true,
-                    isRunning: false, subTextColors: recognition.descSubTextColors??[],
-                  textStyle: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[800],
-                          height: 1.4,),),
-
-              const SizedBox(height: 12),
-              
               // Images if available
               if (recognition.imageUrls != null && recognition.imageUrls!.isNotEmpty) ...[
                 if (recognition.imageUrls!.length == 1) ...[
@@ -318,7 +307,18 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                   ),
                 ],
               ],
-              
+
+              const SizedBox(height: 8),
+
+              // Description
+              if (recognition.description.isNotEmpty)
+                getRunningMultiColorText(recognition.description, isMulticolor: true,
+                  isRunning: false, subTextColors: recognition.descSubTextColors??[],
+                  textStyle: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[800],
+                    height: 1.4,),),
+
               const SizedBox(height: 12),
 
               // Items with Link buttons (bottom of card)
@@ -335,7 +335,7 @@ class _RecognitionsScreenState extends State<RecognitionsScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
               ],
               
               // Bottom row removed (View Source deleted)

@@ -305,7 +305,7 @@ class WebRecognitionsScreen extends StatelessWidget {
                     color: Colors.grey[800],
                     height: 1.4,),),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
 
               // Items with Link buttons (bottom of card)
               if ((recognition.itemsWithLink ?? []).isNotEmpty) ...[

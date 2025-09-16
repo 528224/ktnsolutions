@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ktnsolutions/screens/recognitions/recognitions_screen.dart';
 import 'package:ktnsolutions/screens/case_management/cases_list_screen.dart';
 import 'package:ktnsolutions/screens/dashboard/dashboard_screen.dart';
+import 'package:ktnsolutions/screens/profile/profile_screen.dart';
 
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
@@ -18,6 +19,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     const RecognitionsScreen(),
     const CasesListScreen(),
     const DashboardScreen(),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -76,6 +78,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.analytics),
                   label: 'Reports',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profile',
                 ),
               ],
             ),
