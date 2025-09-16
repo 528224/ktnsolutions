@@ -227,41 +227,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.1),
+        surfaceTintColor: Colors.transparent,
         actions: [
           if (_isEditing) ...[
-            IconButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              icon: _isSaving 
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save),
-              tooltip: 'Save',
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _isSaving 
+                        ? const Color(0xFF94A3B8).withOpacity(0.1)
+                        : const Color(0xFF10B981).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _isSaving 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(
+                          Icons.save_rounded,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        ),
+                ),
+                onPressed: _isSaving ? null : _saveProfile,
+                tooltip: 'Save',
+              ),
             ),
-            IconButton(
-              onPressed: _isSaving ? null : _toggleEdit,
-              icon: const Icon(Icons.close),
-              tooltip: 'Cancel',
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 20,
+                  ),
+                ),
+                onPressed: _isSaving ? null : _toggleEdit,
+                tooltip: 'Cancel',
+              ),
             ),
           ] else ...[
-            IconButton(
-              onPressed: _toggleEdit,
-              icon: const Icon(Icons.edit),
-              tooltip: 'Edit Profile',
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: Color(0xFF6366F1),
+                    size: 20,
+                  ),
+                ),
+                onPressed: _toggleEdit,
+                tooltip: 'Edit Profile',
+              ),
             ),
           ],
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildLoadingState()
           : _isEditing
               ? _buildEditView()
               : _buildViewMode(),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6366F1).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Loading profile...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -269,46 +360,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final data = _homeDetails;
     
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
         children: [
           // Profile Card
-          AdvocateProfile(
-            name: data?.name.isNotEmpty == true ? data!.name : _defaultName,
-            designation: data?.designation.isNotEmpty == true ? data!.designation : _defaultDesignation,
-            firmName: data?.firmName.isNotEmpty == true ? data!.firmName : _defaultFirmName,
-            email: data?.email.isNotEmpty == true ? data!.email : _defaultEmail,
-            phoneNumbers: data?.phoneNumbers.isNotEmpty == true ? data!.phoneNumbers : _defaultPhoneNumbers,
-            offices: data?.offices.isNotEmpty == true ? data!.offices : _defaultOffices,
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: AdvocateProfile(
+                name: data?.name.isNotEmpty == true ? data!.name : _defaultName,
+                designation: data?.designation.isNotEmpty == true ? data!.designation : _defaultDesignation,
+                firmName: data?.firmName.isNotEmpty == true ? data!.firmName : _defaultFirmName,
+                email: data?.email.isNotEmpty == true ? data!.email : _defaultEmail,
+                phoneNumbers: data?.phoneNumbers.isNotEmpty == true ? data!.phoneNumbers : _defaultPhoneNumbers,
+                offices: data?.offices.isNotEmpty == true ? data!.offices : _defaultOffices,
+              ),
+            ),
           ),
           
           const SizedBox(height: 24),
           
           // Additional Info Card
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Profile Information',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.info_outline_rounded,
+                          color: Color(0xFF6366F1),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Profile Information',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow('Last Updated', _formatDate(data?.updatedAt ?? DateTime.now())),
-                  const SizedBox(height: 8),
-                  _buildInfoRow('Data Source', data != null ? 'Firestore' : 'Default'),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  _buildModernInfoRow('Last Updated', _formatDate(data?.updatedAt ?? DateTime.now())),
+                  const SizedBox(height: 12),
+                  _buildModernInfoRow('Data Source', data != null ? 'Firestore' : 'Default'),
+                  const SizedBox(height: 20),
                   if (data == null)
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _initializeProfileData,
-                        icon: const Icon(Icons.cloud_upload),
-                        label: const Text('Initialize Profile Data'),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _initializeProfileData,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.cloud_upload_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Initialize Profile Data',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -322,50 +503,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildEditView() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Basic Information
-          _buildSection(
+          _buildModernSection(
             'Basic Information',
+            Icons.person_outline_rounded,
             [
-              _buildTextField('Name', _nameController),
-              _buildTextField('Designation', _designationController),
-              _buildTextField('Firm Name', _firmNameController),
-              _buildTextField('Email', _emailController, keyboardType: TextInputType.emailAddress),
+              _buildModernTextField('Name', _nameController),
+              _buildModernTextField('Designation', _designationController),
+              _buildModernTextField('Firm Name', _firmNameController),
+              _buildModernTextField('Email', _emailController, keyboardType: TextInputType.emailAddress),
             ],
           ),
           
           const SizedBox(height: 24),
           
           // Phone Numbers
-          _buildSection(
+          _buildModernSection(
             'Phone Numbers',
+            Icons.phone_outlined,
             [
               ...List.generate(_phoneControllers.length, (index) {
                 return Row(
                   children: [
                     Expanded(
-                      child: _buildTextField(
+                      child: _buildModernTextField(
                         'Phone ${index + 1}',
                         _phoneControllers[index],
                         keyboardType: TextInputType.phone,
                       ),
                     ),
                     if (_phoneControllers.length > 1)
-                      IconButton(
-                        onPressed: () => _removePhoneField(index),
-                        icon: const Icon(Icons.remove_circle, color: Colors.red),
-                        tooltip: 'Remove phone',
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          onPressed: () => _removePhoneField(index),
+                          icon: const Icon(Icons.remove_rounded, color: Color(0xFFEF4444)),
+                          tooltip: 'Remove phone',
+                        ),
                       ),
                   ],
                 );
               }),
-              TextButton.icon(
-                onPressed: _addPhoneField,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Phone Number'),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: TextButton.icon(
+                  onPressed: _addPhoneField,
+                  icon: const Icon(Icons.add_rounded, color: Color(0xFF10B981)),
+                  label: const Text('Add Phone Number', style: TextStyle(color: Color(0xFF10B981))),
+                ),
               ),
             ],
           ),
@@ -373,32 +575,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 24),
           
           // Offices
-          _buildSection(
+          _buildModernSection(
             'Office Addresses',
+            Icons.location_on_outlined,
             [
               ...List.generate(_officeControllers.length, (index) {
                 return Row(
                   children: [
                     Expanded(
-                      child: _buildTextField(
+                      child: _buildModernTextField(
                         'Office ${index + 1}',
                         _officeControllers[index],
                         maxLines: 3,
                       ),
                     ),
                     if (_officeControllers.length > 1)
-                      IconButton(
-                        onPressed: () => _removeOfficeField(index),
-                        icon: const Icon(Icons.remove_circle, color: Colors.red),
-                        tooltip: 'Remove office',
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          onPressed: () => _removeOfficeField(index),
+                          icon: const Icon(Icons.remove_rounded, color: Color(0xFFEF4444)),
+                          tooltip: 'Remove office',
+                        ),
                       ),
                   ],
                 );
               }),
-              TextButton.icon(
-                onPressed: _addOfficeField,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Office Address'),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: TextButton.icon(
+                  onPressed: _addOfficeField,
+                  icon: const Icon(Icons.add_rounded, color: Color(0xFF10B981)),
+                  label: const Text('Add Office Address', style: TextStyle(color: Color(0xFF10B981))),
+                ),
               ),
             ],
           ),
@@ -406,24 +628,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 32),
           
           // Save Button
-          SizedBox(
+          Container(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              child: _isSaving
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 8),
-                        Text('Saving...'),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _isSaving
+                    ? [
+                        const Color(0xFF94A3B8),
+                        const Color(0xFF94A3B8),
+                      ]
+                    : [
+                        const Color(0xFF10B981),
+                        const Color(0xFF059669),
                       ],
-                    )
-                  : const Text('Save Changes'),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: _isSaving
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isSaving ? null : _saveProfile,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: _isSaving
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Saving...',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.save_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
             ),
           ),
         ],
@@ -431,20 +711,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSection(String title, List<Widget> children) {
-    return Card(
+  Widget _buildModernSection(String title, IconData icon, List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: const Color(0xFF6366F1),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             ...children,
           ],
         ),
@@ -452,7 +765,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTextField(
+  Widget _buildModernTextField(
     String label,
     TextEditingController controller, {
     TextInputType? keyboardType,
@@ -464,35 +777,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Color(0xFF1E293B),
+        ),
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          labelStyle: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 14,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          filled: true,
+          fillColor: const Color(0xFFF8FAFC),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            '$label:',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
+  Widget _buildModernInfoRow(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF64748B),
+                fontSize: 14,
+              ),
             ),
           ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFF1E293B),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
