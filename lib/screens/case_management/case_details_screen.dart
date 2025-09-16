@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../models/court.dart';
 import '../../services/case_service.dart';
+import '../../services/global_data_service.dart';
 
 class CaseDetailsScreen extends StatefulWidget {
   final LegalCase legalCase;
@@ -21,34 +22,141 @@ class CaseDetailsScreen extends StatefulWidget {
 class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   late LegalCase _currentCase;
   bool _isLoading = false;
+  bool _isAdmin = false;
+  bool _canManagePostings = false;
 
   @override
   void initState() {
     super.initState();
     _currentCase = widget.legalCase;
+    _checkUserPermissions();
   }
 
-  bool get _isAdmin {
+  Future<void> _checkUserPermissions() async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser?.phoneNumber == null) return false;
+    if (currentUser?.phoneNumber == null) return;
     
-    // Check if current user is admin by matching phone number
-    return globalUsers.any((user) => 
-        user.mobile == currentUser!.phoneNumber && user.isAdmin);
+    try {
+      final users = await GlobalDataService().getAllUsers();
+      final currentUserData = users.firstWhere(
+        (user) => user.mobile == currentUser!.phoneNumber,
+        orElse: () => UserDetails(id: '', name: '', mobile: '', isAdmin: false),
+      );
+      
+      setState(() {
+        _isAdmin = currentUserData.isAdmin;
+        _canManagePostings = currentUserData.isAdmin || 
+                           _currentCase.nextPosting?.staff == currentUserData.name;
+      });
+    } catch (e) {
+      print('Error checking user permissions: $e');
+    }
   }
 
-  bool get _canManagePostings {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser?.phoneNumber == null) return false;
-    
-    final currentUserData = globalUsers.firstWhere(
-      (user) => user.mobile == currentUser!.phoneNumber,
-      orElse: () => UserDetails(id: '', name: '', mobile: '', isAdmin: false),
+  Widget _buildUserDropdown({
+    required String? value,
+    required String label,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FutureBuilder<List<UserDetails>>(
+      future: GlobalDataService().getAllUsers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: hintText,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Loading...'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        final users = snapshot.data ?? [];
+        return DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            hintText: hintText,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: null,
+              child: Text(hintText),
+            ),
+            ...users.map((user) {
+              return DropdownMenuItem(
+                value: user.name,
+                child: Text(user.name),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        );
+      },
     );
-    
-    // Can manage if admin or if assigned to current posting
-    return currentUserData.isAdmin || 
-           _currentCase.nextPosting?.staff == currentUserData.name;
+  }
+
+  Widget _buildCourtDropdown({
+    required String? value,
+    required String label,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FutureBuilder<List<Court>>(
+      future: GlobalDataService().getAllCourts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: hintText,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Loading...'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        final courts = snapshot.data ?? [];
+        return DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            hintText: hintText,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: null,
+              child: Text(hintText),
+            ),
+            ...courts.map((court) {
+              return DropdownMenuItem(
+                value: court.name,
+                child: Text(court.name),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        );
+      },
+    );
   }
 
   @override
@@ -839,15 +947,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     String? selectedCourt = nextPosting?.court;
     String? selectedStaff = nextPosting?.staff;
     
-    // Check if the existing court value exists in our court list
-    if (selectedCourt != null && !globalCourts.any((court) => court.name == selectedCourt)) {
-      selectedCourt = null; // Reset to null if court not found in list
-    }
-    
-    // Check if the existing staff value exists in our staff list
-    if (selectedStaff != null && !globalUsers.any((user) => user.name == selectedStaff)) {
-      selectedStaff = null; // Reset to null if staff not found in list
-    }
+    // Note: We'll validate court and staff existence in the dropdown validation
+    // The dropdowns will handle showing appropriate options
 
     final result = await showDialog<bool>(
       context: context,
@@ -891,25 +992,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                       ],
                     ),
                   ),
-                DropdownButtonFormField<String>(
+                _buildCourtDropdown(
                   value: selectedCourt,
-                  decoration: const InputDecoration(
-                    labelText: 'Court',
-                    border: OutlineInputBorder(),
-                    hintText: 'Select court',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Select Court'),
-                    ),
-                    ...globalCourts.map((court) {
-                      return DropdownMenuItem(
-                        value: court.name,
-                        child: Text(court.name),
-                      );
-                    }),
-                  ],
+                  label: 'Court',
+                  hintText: 'Select Court',
                   onChanged: (value) {
                     setState(() {
                       selectedCourt = value;
@@ -942,25 +1028,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                       ],
                     ),
                   ),
-                DropdownButtonFormField<String>(
+                _buildUserDropdown(
                   value: selectedStaff,
-                  decoration: const InputDecoration(
-                    labelText: 'Staff',
-                    border: OutlineInputBorder(),
-                    hintText: 'Select staff',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Select Staff'),
-                    ),
-                    ...globalUsers.map((user) {
-                      return DropdownMenuItem(
-                        value: user.name,
-                        child: Text(user.name),
-                      );
-                    }),
-                  ],
+                  label: 'Staff',
+                  hintText: 'Select Staff',
                   onChanged: (value) {
                     setState(() {
                       selectedStaff = value;
@@ -1045,25 +1116,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
+                _buildUserDropdown(
                   value: selectedStaff,
-                  decoration: const InputDecoration(
-                    labelText: 'Assign to Staff',
-                    border: OutlineInputBorder(),
-                    hintText: 'Select staff',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Select Staff'),
-                    ),
-                    ...globalUsers.map((user) {
-                      return DropdownMenuItem(
-                        value: user.name,
-                        child: Text(user.name),
-                      );
-                    }),
-                  ],
+                  label: 'Assign to Staff',
+                  hintText: 'Select Staff',
                   onChanged: (value) {
                     setState(() {
                       selectedStaff = value;
@@ -1151,25 +1207,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
+                _buildUserDropdown(
                   value: selectedStaff,
-                  decoration: const InputDecoration(
-                    labelText: 'Assign to Staff',
-                    border: OutlineInputBorder(),
-                    hintText: 'Select staff',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Select Staff'),
-                    ),
-                    ...globalUsers.map((user) {
-                      return DropdownMenuItem(
-                        value: user.name,
-                        child: Text(user.name),
-                      );
-                    }),
-                  ],
+                  label: 'Assign to Staff',
+                  hintText: 'Select Staff',
                   onChanged: (value) {
                     setState(() {
                       selectedStaff = value;
@@ -1351,25 +1392,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
+                  _buildCourtDropdown(
                     value: selectedCourt,
-                    decoration: const InputDecoration(
-                      labelText: 'Court',
-                      border: OutlineInputBorder(),
-                      hintText: 'Select court',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Select Court'),
-                      ),
-                      ...globalCourts.map((court) {
-                        return DropdownMenuItem(
-                          value: court.name,
-                          child: Text(court.name),
-                        );
-                      }),
-                    ],
+                    label: 'Court',
+                    hintText: 'Select Court',
                     onChanged: (value) {
                       setState(() {
                         selectedCourt = value;
@@ -1377,25 +1403,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
+                  _buildUserDropdown(
                     value: selectedStaff,
-                    decoration: const InputDecoration(
-                      labelText: 'Staff',
-                      border: OutlineInputBorder(),
-                      hintText: 'Select staff',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Select Staff'),
-                      ),
-                      ...globalUsers.map((user) {
-                        return DropdownMenuItem(
-                          value: user.name,
-                          child: Text(user.name),
-                        );
-                      }),
-                    ],
+                    label: 'Staff',
+                    hintText: 'Select Staff',
                     onChanged: (value) {
                       setState(() {
                         selectedStaff = value;
@@ -1503,25 +1514,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
+                _buildCourtDropdown(
                   value: selectedCourt,
-                  decoration: const InputDecoration(
-                    labelText: 'Court',
-                    border: OutlineInputBorder(),
-                    hintText: 'Select court',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Select Court'),
-                    ),
-                    ...globalCourts.map((court) {
-                      return DropdownMenuItem(
-                        value: court.name,
-                        child: Text(court.name),
-                      );
-                    }),
-                  ],
+                  label: 'Court',
+                  hintText: 'Select Court',
                   onChanged: (value) {
                     setState(() {
                       selectedCourt = value;
@@ -1529,25 +1525,10 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
+                _buildUserDropdown(
                   value: selectedStaff,
-                  decoration: const InputDecoration(
-                    labelText: 'Staff',
-                    border: OutlineInputBorder(),
-                    hintText: 'Select staff',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Select Staff'),
-                    ),
-                    ...globalUsers.map((user) {
-                      return DropdownMenuItem(
-                        value: user.name,
-                        child: Text(user.name),
-                      );
-                    }),
-                  ],
+                  label: 'Staff',
+                  hintText: 'Select Staff',
                   onChanged: (value) {
                     setState(() {
                       selectedStaff = value;

@@ -19,7 +19,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     const RecognitionsScreen(),
     const CasesListScreen(),
     const DashboardScreen(),
-    const ProfileScreen(),
+    const HomeScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -80,8 +80,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                   label: 'Reports',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'Profile',
+                  icon: Icon(Icons.home),
+                  label: 'Home',
                 ),
               ],
             ),

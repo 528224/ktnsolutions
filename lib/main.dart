@@ -8,6 +8,7 @@ import 'package:ktnsolutions/utils/firestore_initializer.dart';
 import 'firebase_options.dart';
 import 'screens/auth/phone_auth_screen.dart';
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,19 +18,19 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  final isWeb = identical(0, 0.0); // Platform detection for web
-  if (isWeb){
+  if (kIsWeb){
     var currentFirebaseAuthUser = FirebaseAuth.instance.currentUser;
     if (currentFirebaseAuthUser?.uid == null) {
       await FirebaseAuth.instance.signInAnonymously();
     }
     
-    // // Initialize homeDetails data for web (optional - app will work with defaults if this fails)
-    // try {
-    //   await FirestoreInitializer.initializeHomeDetails();
-    // } catch (e) {
-    //   print('Note: Using default home details (Firestore initialization failed: $e)');
-    // }
+    // Initialize all Firestore collections for web (optional - app will work with defaults if this fails)
+    try {
+      await FirestoreInitializer.initializeHomeDetails();
+      print('Firestore collections initialized successfully');
+    } catch (e) {
+      print('Note: Using default data (Firestore initialization failed: $e)');
+    }
   }
 
   runApp(const MyApp());

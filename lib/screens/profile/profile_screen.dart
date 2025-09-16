@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ktnsolutions/constants/profile_constants.dart';
 import 'package:ktnsolutions/models/home_details.dart';
 import 'package:ktnsolutions/services/home_details_service.dart';
 import 'package:ktnsolutions/utils/profile_initializer.dart';
 import 'package:ktnsolutions/widgets/user_profile.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final HomeDetailsService _homeDetailsService = HomeDetailsService();
   HomeDetails? _homeDetails;
   bool _isLoading = true;
@@ -27,12 +26,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emailController = TextEditingController();
   final List<TextEditingController> _phoneControllers = [];
   final List<TextEditingController> _officeControllers = [];
+  
+  // Tab controller
+  late TabController _tabController;
 
   // Default values - using constants from ProfileConstants
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadProfileData();
   }
 
@@ -48,6 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     for (var controller in _officeControllers) {
       controller.dispose();
     }
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -129,14 +133,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .where((text) => text.isNotEmpty)
           .toList();
 
-      final updatedHomeDetails = HomeDetails(
-        id: _homeDetails?.id ?? '',
+      final updatedProfileData = ProfileData(
         name: _nameController.text.trim(),
         designation: _designationController.text.trim(),
         firmName: _firmNameController.text.trim(),
         email: _emailController.text.trim(),
         phoneNumbers: phoneNumbers,
         offices: offices,
+      );
+
+      final updatedHomeDetails = HomeDetails(
+        id: _homeDetails?.id ?? '',
+        profileData: updatedProfileData,
+        usersList: _homeDetails?.usersList ?? [],
+        courtList: _homeDetails?.courtList ?? [],
         createdAt: _homeDetails?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -221,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text(
-          'Profile',
+          'Home',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Color(0xFF1E293B),
@@ -304,9 +314,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: _isLoading
           ? _buildLoadingState()
-          : _isEditing
-              ? _buildEditView()
-              : _buildViewMode(),
+          : Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: const Color(0xFF6366F1),
+                    unselectedLabelColor: const Color(0xFF64748B),
+                    indicatorColor: const Color(0xFF6366F1),
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.person_outline),
+                        text: 'Profile',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.people_outline),
+                        text: 'Users',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.gavel_outlined),
+                        text: 'Courts',
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _isEditing ? _buildEditView() : _buildViewMode(),
+                      _buildUsersView(),
+                      _buildCourtsView(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -840,5 +884,263 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildUsersView() {
+    final users = _homeDetails?.usersList ?? [];
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      child: Column(
+        children: [
+          // Users Header
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.people_outline,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Users List (${users.length})',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Manage your team members and their admin privileges.',
+                    style: TextStyle(
+                      color: const Color(0xFF64748B),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Users List
+          ...users.map((user) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: user.isAdmin 
+                    ? const Color(0xFF6366F1).withOpacity(0.1)
+                    : const Color(0xFF10B981).withOpacity(0.1),
+                child: Icon(
+                  user.isAdmin ? Icons.admin_panel_settings : Icons.person,
+                  color: user.isAdmin ? const Color(0xFF6366F1) : const Color(0xFF10B981),
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                user.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.mobile,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (user.isAdmin)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Admin',
+                        style: TextStyle(
+                          color: Color(0xFF6366F1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCourtsView() {
+    final courts = _homeDetails?.courtList ?? [];
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      child: Column(
+        children: [
+          // Courts Header
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.gavel_outlined,
+                          color: Color(0xFFF59E0B),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Courts List (${courts.length})',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Manage the list of courts where your firm practices.',
+                    style: TextStyle(
+                      color: const Color(0xFF64748B),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Courts List
+          ...courts.map((court) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.gavel_outlined,
+                  color: Color(0xFFF59E0B),
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                court.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              trailing: const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Color(0xFF94A3B8),
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
   }
 }

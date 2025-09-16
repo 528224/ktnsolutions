@@ -55,24 +55,6 @@ class UserDetails {
   }
 }
 
-// Global array with user objects
-final List<UserDetails> globalUsers = [
-  UserDetails(
-    id: '1',
-    name: 'Prbhu',
-    mobile: '+919544322000',
-    isAdmin: true,
-  ),
-  UserDetails(
-    id: '2',
-    name: 'Cristo',
-    mobile: '+919846476909',
-    isAdmin: false,
-  ),
-  UserDetails(
-    id: '3',
-    name: 'Simjo',
-    mobile: '+911234567890',
-    isAdmin: true,
-  ),
-];
+// Note: globalUsers array has been moved to Firestore collection 'allUsers'
+// Use GlobalDataService().getAllUsers() to fetch users from Firestore
+// Default values are maintained as fallback in the service

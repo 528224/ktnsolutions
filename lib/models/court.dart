@@ -5,6 +5,18 @@ class Court {
     required this.name,
   });
 
+  factory Court.fromJson(Map<String, dynamic> json) {
+    return Court(
+      name: json['name'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+    };
+  }
+
   @override
   String toString() => name;
 
@@ -17,24 +29,6 @@ class Court {
   int get hashCode => name.hashCode;
 }
 
-// Global list of courts
-final List<Court> globalCourts = [
-  Court(name: 'Supreme Court of India'),
-  Court(name: 'Delhi High Court'),
-  Court(name: 'Kerala High Court'),
-  Court(name: 'Karnataka High Court'),
-  Court(name: 'Tamil Nadu High Court'),
-  Court(name: 'Maharashtra High Court'),
-  Court(name: 'Gujarat High Court'),
-  Court(name: 'Rajasthan High Court'),
-  Court(name: 'Punjab & Haryana High Court'),
-  Court(name: 'Madhya Pradesh High Court'),
-  Court(name: 'District Court - Thrissur'),
-  Court(name: 'District Court - Palakkad'),
-  Court(name: 'District Court - Ernakulam'),
-  Court(name: 'District Court - Kozhikode'),
-  Court(name: 'Family Court'),
-  Court(name: 'Consumer Court'),
-  Court(name: 'Labour Court'),
-  Court(name: 'Other'),
-];
+// Note: globalCourts array has been moved to Firestore collection 'allCourts'
+// Use GlobalDataService().getAllCourts() to fetch courts from Firestore
+// Default values are maintained as fallback in the service

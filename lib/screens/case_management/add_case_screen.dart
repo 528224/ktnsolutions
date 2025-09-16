@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../services/case_service.dart';
+import '../../services/global_data_service.dart';
 
 class AddCaseScreen extends StatefulWidget {
   const AddCaseScreen({super.key});
@@ -44,6 +45,150 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
       task.dispose();
     }
     super.dispose();
+  }
+
+  Widget _buildUserDropdown({
+    required String? value,
+    required String label,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FutureBuilder<List<UserDetails>>(
+      future: GlobalDataService().getAllUsers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: hintText,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Loading...'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        if (snapshot.hasError) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: 'Error loading users',
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Error loading users'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        final users = snapshot.data ?? [];
+        
+        return DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            hintText: hintText,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: null,
+              child: Text(hintText),
+            ),
+            ...users.map((user) {
+              return DropdownMenuItem(
+                value: user.name,
+                child: Text(user.name),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        );
+      },
+    );
+  }
+
+  Widget _buildCourtDropdown({
+    required String? value,
+    required String label,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FutureBuilder<List<Court>>(
+      future: GlobalDataService().getAllCourts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: hintText,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Loading...'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        if (snapshot.hasError) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: 'Error loading courts',
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Error loading courts'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        final courts = snapshot.data ?? [];
+        
+        return DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            hintText: hintText,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: null,
+              child: Text(hintText),
+            ),
+            ...courts.map((court) {
+              return DropdownMenuItem(
+                value: court.name,
+                child: Text(court.name),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        );
+      },
+    );
   }
 
   @override
@@ -170,25 +315,10 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            _buildCourtDropdown(
               value: _selectedCourt,
-              decoration: const InputDecoration(
-                labelText: 'Court',
-                border: OutlineInputBorder(),
-                hintText: 'Select court (optional)',
-              ),
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('No court selected'),
-                ),
-                ...globalCourts.map((court) {
-                  return DropdownMenuItem(
-                    value: court.name,
-                    child: Text(court.name),
-                  );
-                }),
-              ],
+              label: 'Court',
+              hintText: 'No court selected',
               onChanged: (value) {
                 setState(() {
                   _selectedCourt = value;
@@ -196,25 +326,10 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            _buildUserDropdown(
               value: _selectedStaff,
-              decoration: const InputDecoration(
-                labelText: 'Staff',
-                border: OutlineInputBorder(),
-                hintText: 'Select staff (optional)',
-              ),
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('No staff assigned'),
-                ),
-                ...globalUsers.map((user) {
-                  return DropdownMenuItem(
-                    value: user.name,
-                    child: Text(user.name),
-                  );
-                }),
-              ],
+              label: 'Staff',
+              hintText: 'No staff assigned',
               onChanged: (value) {
                 setState(() {
                   _selectedStaff = value;
@@ -384,25 +499,10 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            _buildUserDropdown(
               value: task.selectedStaff,
-              decoration: const InputDecoration(
-                labelText: 'Assigned Staff',
-                border: OutlineInputBorder(),
-                hintText: 'Select staff (optional)',
-              ),
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('No staff assigned'),
-                ),
-                ...globalUsers.map((user) {
-                  return DropdownMenuItem(
-                    value: user.name,
-                    child: Text(user.name),
-                  );
-                }),
-              ],
+              label: 'Assigned Staff',
+              hintText: 'No staff assigned',
               onChanged: (value) {
                 setState(() {
                   task.selectedStaff = value;

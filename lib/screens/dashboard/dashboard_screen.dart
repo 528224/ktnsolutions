@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../services/case_service.dart';
+import '../../services/global_data_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,6 +23,112 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadCases();
+  }
+
+  Widget _buildUserDropdown({
+    required String? value,
+    required String label,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FutureBuilder<List<UserDetails>>(
+      future: GlobalDataService().getAllUsers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: hintText,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Loading...'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        final users = snapshot.data ?? [];
+        return DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            hintText: hintText,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: null,
+              child: Text(hintText),
+            ),
+            ...users.map((user) {
+              return DropdownMenuItem(
+                value: user.name,
+                child: Text(user.name),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        );
+      },
+    );
+  }
+
+  Widget _buildCourtDropdown({
+    required String? value,
+    required String label,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return FutureBuilder<List<Court>>(
+      future: GlobalDataService().getAllCourts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return DropdownButtonFormField<String>(
+            value: value,
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+              hintText: hintText,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: null,
+                child: Text('Loading...'),
+              ),
+            ],
+            onChanged: null,
+          );
+        }
+
+        final courts = snapshot.data ?? [];
+        return DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            hintText: hintText,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: null,
+              child: Text(hintText),
+            ),
+            ...courts.map((court) {
+              return DropdownMenuItem(
+                value: court.name,
+                child: Text(court.name),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        );
+      },
+    );
   }
 
   Future<void> _loadCases() async {
@@ -692,25 +799,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
+                  _buildCourtDropdown(
                     value: selectedCourt,
-                    decoration: const InputDecoration(
-                      labelText: 'Court',
-                      border: OutlineInputBorder(),
-                      hintText: 'Select court',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Select Court'),
-                      ),
-                      ...globalCourts.map((court) {
-                        return DropdownMenuItem(
-                          value: court.name,
-                          child: Text(court.name),
-                        );
-                      }),
-                    ],
+                    label: 'Court',
+                    hintText: 'Select Court',
                     onChanged: (value) {
                       setState(() {
                         selectedCourt = value;
@@ -718,25 +810,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
+                  _buildUserDropdown(
                     value: selectedStaff,
-                    decoration: const InputDecoration(
-                      labelText: 'Staff',
-                      border: OutlineInputBorder(),
-                      hintText: 'Select staff',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Select Staff'),
-                      ),
-                      ...globalUsers.map((user) {
-                        return DropdownMenuItem(
-                          value: user.name,
-                          child: Text(user.name),
-                        );
-                      }),
-                    ],
+                    label: 'Staff',
+                    hintText: 'Select Staff',
                     onChanged: (value) {
                       setState(() {
                         selectedStaff = value;
