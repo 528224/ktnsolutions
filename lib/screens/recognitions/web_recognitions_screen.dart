@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ktnsolutions/models/recognition.dart';
+import 'package:ktnsolutions/models/home_details.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
+import 'package:ktnsolutions/services/home_details_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../rich_text_with_multiple_color.dart';
@@ -8,6 +10,7 @@ import '../../widgets/user_profile.dart';
 
 class WebRecognitionsScreen extends StatelessWidget {
   final RecognitionService _recognitionService = RecognitionService();
+  final HomeDetailsService _homeDetailsService = HomeDetailsService();
 
   WebRecognitionsScreen({super.key});
 
@@ -29,18 +32,8 @@ class WebRecognitionsScreen extends StatelessWidget {
           child:
           SingleChildScrollView(
             child: Column(children: [
-                AdvocateProfile(
-                  name: "Adv. PRABHU K N",
-                  designation: "Supreme Court & All High Courts",
-                  firmName: "KTN Solutions Lawyers",
-                  email: "ktnsolutionslawyers@gmail.com",
-                  phoneNumbers: ["9388118177", "9544322000"],
-                  offices: [
-                    "Chamber No.D 422, D Block, Additional Building Complex, Supreme Court, New Delhi - 110 001",
-                    "4th Floor, Peace Tower, Opp North Gate Of Collectorate & District Panchayath Ayyanthole, Thrissur - 680 003",
-                    "2nd Floor, Delma Express, Opposite Cherupushpam Girls Higher Secondary School, Vadakkencherry, Palakkad - 678 683",
-                  ],
-                ),
+                // Default hardcoded values
+                _buildAdvocateProfileWithFallback(),
                 FutureBuilder<List<Recognition>>(
                     future: _recognitionService.getRecognitions(), // 👈 now returns Future
                     builder: (context, snapshot) {
@@ -78,6 +71,53 @@ class WebRecognitionsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAdvocateProfileWithFallback() {
+    // Default hardcoded values
+    const defaultName = "Adv. PRABHU K N";
+    const defaultDesignation = "Supreme Court & All High Courts";
+    const defaultFirmName = "KTN Solutions Lawyers";
+    const defaultEmail = "ktnsolutionslawyers@gmail.com";
+    const defaultPhoneNumbers = ["9388118177", "9544322000"];
+    const defaultOffices = [
+      "Chamber No.D 422, D Block, Additional Building Complex, Supreme Court, New Delhi - 110 001",
+      "4th Floor, Peace Tower, Opp North Gate Of Collectorate & District Panchayath Ayyanthole, Thrissur - 680 003",
+      "2nd Floor, Delma Express, Opposite Cherupushpam Girls Higher Secondary School, Vadakkencherry, Palakkad - 678 683",
+    ];
+
+    return FutureBuilder<HomeDetails?>(
+      future: _homeDetailsService.getHomeDetails(),
+      builder: (context, snapshot) {
+        // Always show default values immediately, update with Firestore data when available
+        String name = defaultName;
+        String designation = defaultDesignation;
+        String firmName = defaultFirmName;
+        String email = defaultEmail;
+        List<String> phoneNumbers = defaultPhoneNumbers;
+        List<String> offices = defaultOffices;
+
+        // Update with Firestore data if available and no errors
+        if (snapshot.hasData && snapshot.data != null && !snapshot.hasError) {
+          final homeDetails = snapshot.data!;
+          name = homeDetails.name.isNotEmpty ? homeDetails.name : defaultName;
+          designation = homeDetails.designation.isNotEmpty ? homeDetails.designation : defaultDesignation;
+          firmName = homeDetails.firmName.isNotEmpty ? homeDetails.firmName : defaultFirmName;
+          email = homeDetails.email.isNotEmpty ? homeDetails.email : defaultEmail;
+          phoneNumbers = homeDetails.phoneNumbers.isNotEmpty ? homeDetails.phoneNumbers : defaultPhoneNumbers;
+          offices = homeDetails.offices.isNotEmpty ? homeDetails.offices : defaultOffices;
+        }
+
+        return AdvocateProfile(
+          name: name,
+          designation: designation,
+          firmName: firmName,
+          email: email,
+          phoneNumbers: phoneNumbers,
+          offices: offices,
+        );
+      },
     );
   }
 
