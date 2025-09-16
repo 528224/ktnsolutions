@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ktnsolutions/constants/profile_constants.dart';
 import 'package:ktnsolutions/models/home_details.dart';
 import 'package:ktnsolutions/services/home_details_service.dart';
 import 'package:ktnsolutions/utils/profile_initializer.dart';
@@ -27,17 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final List<TextEditingController> _phoneControllers = [];
   final List<TextEditingController> _officeControllers = [];
 
-  // Default values
-  static const String _defaultName = "Adv. PRABHU K N";
-  static const String _defaultDesignation = "Supreme Court & All High Courts";
-  static const String _defaultFirmName = "KTN Solutions Lawyers";
-  static const String _defaultEmail = "ktnsolutionslawyers@gmail.com";
-  static const List<String> _defaultPhoneNumbers = ["9388118177", "9544322000"];
-  static const List<String> _defaultOffices = [
-    "Chamber No.D 422, D Block, Additional Building Complex, Supreme Court, New Delhi - 110 001",
-    "4th Floor, Peace Tower, Opp North Gate Of Collectorate & District Panchayath Ayyanthole, Thrissur - 680 003",
-    "2nd Floor, Delma Express, Opposite Cherupushpam Girls Higher Secondary School, Vadakkencherry, Palakkad - 678 683",
-  ];
+  // Default values - using constants from ProfileConstants
 
   @override
   void initState() {
@@ -90,21 +81,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _initializeControllers() {
     final data = _homeDetails;
     
-    _nameController.text = data?.name.isNotEmpty == true ? data!.name : _defaultName;
-    _designationController.text = data?.designation.isNotEmpty == true ? data!.designation : _defaultDesignation;
-    _firmNameController.text = data?.firmName.isNotEmpty == true ? data!.firmName : _defaultFirmName;
-    _emailController.text = data?.email.isNotEmpty == true ? data!.email : _defaultEmail;
+    _nameController.text = data?.name.isNotEmpty == true ? data!.name : ProfileConstants.defaultName;
+    _designationController.text = data?.designation.isNotEmpty == true ? data!.designation : ProfileConstants.defaultDesignation;
+    _firmNameController.text = data?.firmName.isNotEmpty == true ? data!.firmName : ProfileConstants.defaultFirmName;
+    _emailController.text = data?.email.isNotEmpty == true ? data!.email : ProfileConstants.defaultEmail;
 
     // Initialize phone controllers
     _phoneControllers.clear();
-    final phoneNumbers = data?.phoneNumbers.isNotEmpty == true ? data!.phoneNumbers : _defaultPhoneNumbers;
+    final phoneNumbers = data?.phoneNumbers.isNotEmpty == true ? data!.phoneNumbers : ProfileConstants.defaultPhoneNumbers;
     for (String phone in phoneNumbers) {
       _phoneControllers.add(TextEditingController(text: phone));
     }
 
     // Initialize office controllers
     _officeControllers.clear();
-    final offices = data?.offices.isNotEmpty == true ? data!.offices : _defaultOffices;
+    final offices = data?.offices.isNotEmpty == true ? data!.offices : ProfileConstants.defaultOffices;
     for (String office in offices) {
       _officeControllers.add(TextEditingController(text: office));
     }
@@ -383,12 +374,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: AdvocateProfile(
-                name: data?.name.isNotEmpty == true ? data!.name : _defaultName,
-                designation: data?.designation.isNotEmpty == true ? data!.designation : _defaultDesignation,
-                firmName: data?.firmName.isNotEmpty == true ? data!.firmName : _defaultFirmName,
-                email: data?.email.isNotEmpty == true ? data!.email : _defaultEmail,
-                phoneNumbers: data?.phoneNumbers.isNotEmpty == true ? data!.phoneNumbers : _defaultPhoneNumbers,
-                offices: data?.offices.isNotEmpty == true ? data!.offices : _defaultOffices,
+                name: data?.name.isNotEmpty == true ? data!.name : ProfileConstants.defaultName,
+                designation: data?.designation.isNotEmpty == true ? data!.designation : ProfileConstants.defaultDesignation,
+                firmName: data?.firmName.isNotEmpty == true ? data!.firmName : ProfileConstants.defaultFirmName,
+                email: data?.email.isNotEmpty == true ? data!.email : ProfileConstants.defaultEmail,
+                phoneNumbers: data?.phoneNumbers.isNotEmpty == true ? data!.phoneNumbers : ProfileConstants.defaultPhoneNumbers,
+                offices: data?.offices.isNotEmpty == true ? data!.offices : ProfileConstants.defaultOffices,
               ),
             ),
           ),

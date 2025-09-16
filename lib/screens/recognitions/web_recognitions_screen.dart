@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ktnsolutions/constants/profile_constants.dart';
 import 'package:ktnsolutions/models/recognition.dart';
 import 'package:ktnsolutions/models/home_details.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
@@ -165,38 +166,28 @@ class WebRecognitionsScreen extends StatelessWidget {
   }
 
   Widget _buildAdvocateProfileWithFallback() {
-    // Default hardcoded values
-    const defaultName = "Adv. PRABHU K N";
-    const defaultDesignation = "Supreme Court & All High Courts";
-    const defaultFirmName = "KTN Solutions Lawyers";
-    const defaultEmail = "ktnsolutionslawyers@gmail.com";
-    const defaultPhoneNumbers = ["9388118177", "9544322000"];
-    const defaultOffices = [
-      "Chamber No.D 422, D Block, Additional Building Complex, Supreme Court, New Delhi - 110 001",
-      "4th Floor, Peace Tower, Opp North Gate Of Collectorate & District Panchayath Ayyanthole, Thrissur - 680 003",
-      "2nd Floor, Delma Express, Opposite Cherupushpam Girls Higher Secondary School, Vadakkencherry, Palakkad - 678 683",
-    ];
+    // Using constants from ProfileConstants
 
     return FutureBuilder<HomeDetails?>(
       future: _homeDetailsService.getHomeDetails(),
       builder: (context, snapshot) {
         // Always show default values immediately, update with Firestore data when available
-        String name = defaultName;
-        String designation = defaultDesignation;
-        String firmName = defaultFirmName;
-        String email = defaultEmail;
-        List<String> phoneNumbers = defaultPhoneNumbers;
-        List<String> offices = defaultOffices;
+        String name = ProfileConstants.defaultName;
+        String designation = ProfileConstants.defaultDesignation;
+        String firmName = ProfileConstants.defaultFirmName;
+        String email = ProfileConstants.defaultEmail;
+        List<String> phoneNumbers = ProfileConstants.defaultPhoneNumbers;
+        List<String> offices = ProfileConstants.defaultOffices;
 
         // Update with Firestore data if available and no errors
         if (snapshot.hasData && snapshot.data != null && !snapshot.hasError) {
           final homeDetails = snapshot.data!;
-          name = homeDetails.name.isNotEmpty ? homeDetails.name : defaultName;
-          designation = homeDetails.designation.isNotEmpty ? homeDetails.designation : defaultDesignation;
-          firmName = homeDetails.firmName.isNotEmpty ? homeDetails.firmName : defaultFirmName;
-          email = homeDetails.email.isNotEmpty ? homeDetails.email : defaultEmail;
-          phoneNumbers = homeDetails.phoneNumbers.isNotEmpty ? homeDetails.phoneNumbers : defaultPhoneNumbers;
-          offices = homeDetails.offices.isNotEmpty ? homeDetails.offices : defaultOffices;
+          name = homeDetails.name.isNotEmpty ? homeDetails.name : ProfileConstants.defaultName;
+          designation = homeDetails.designation.isNotEmpty ? homeDetails.designation : ProfileConstants.defaultDesignation;
+          firmName = homeDetails.firmName.isNotEmpty ? homeDetails.firmName : ProfileConstants.defaultFirmName;
+          email = homeDetails.email.isNotEmpty ? homeDetails.email : ProfileConstants.defaultEmail;
+          phoneNumbers = homeDetails.phoneNumbers.isNotEmpty ? homeDetails.phoneNumbers : ProfileConstants.defaultPhoneNumbers;
+          offices = homeDetails.offices.isNotEmpty ? homeDetails.offices : ProfileConstants.defaultOffices;
         }
 
         return _buildEnhancedProfileCard(
