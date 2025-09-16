@@ -21,8 +21,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
   // Posting fields
   final _postingTitleController = TextEditingController();
   DateTime? _postingDate;
-  String? _selectedCourt;
-  String? _selectedStaff;
+  String? _selectedCourt = '__SELECT_COURT__';
+  String? _selectedStaff = '__SELECT_USER__';
 
   // Task fields
   final List<TaskFormData> _tasks = [];
@@ -58,7 +58,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return DropdownButtonFormField<String>(
-            value: value,
+            value: null,
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(),
@@ -76,7 +76,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
         if (snapshot.hasError) {
           return DropdownButtonFormField<String>(
-            value: value,
+            value: null,
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(),
@@ -93,6 +93,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         }
 
         final users = snapshot.data ?? [];
+        // Sort users alphabetically by name
+        users.sort((a, b) => a.name.compareTo(b.name));
         
         return DropdownButtonFormField<String>(
           value: value,
@@ -103,8 +105,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
           ),
           items: [
             DropdownMenuItem(
-              value: null,
-              child: Text(hintText),
+              value: '__SELECT_USER__',
+              child: Text('Select User'),
             ),
             ...users.map((user) {
               return DropdownMenuItem(
@@ -130,7 +132,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return DropdownButtonFormField<String>(
-            value: value,
+            value: null,
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(),
@@ -148,7 +150,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
         if (snapshot.hasError) {
           return DropdownButtonFormField<String>(
-            value: value,
+            value: null,
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(),
@@ -165,6 +167,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         }
 
         final courts = snapshot.data ?? [];
+        // Sort courts alphabetically by name
+        courts.sort((a, b) => a.name.compareTo(b.name));
         
         return DropdownButtonFormField<String>(
           value: value,
@@ -175,8 +179,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
           ),
           items: [
             DropdownMenuItem(
-              value: null,
-              child: Text(hintText),
+              value: '__SELECT_COURT__',
+              child: Text('Select Court'),
             ),
             ...courts.map((court) {
               return DropdownMenuItem(
@@ -599,8 +603,8 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
     // Check if posting is partially filled (if any posting field is filled, all should be filled)
     final hasPostingTitle = _postingTitleController.text.trim().isNotEmpty;
-    final hasPostingCourt = _selectedCourt != null;
-    final hasPostingStaff = _selectedStaff != null;
+    final hasPostingCourt = _selectedCourt != null && _selectedCourt != '__SELECT_COURT__';
+    final hasPostingStaff = _selectedStaff != null && _selectedStaff != '__SELECT_USER__';
     final hasPostingDate = _postingDate != null;
 
     if (hasPostingTitle || hasPostingCourt || hasPostingStaff || hasPostingDate) {
@@ -655,7 +659,9 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
         return Task(
           id: Uuid().v4(),
           title: taskData.titleController.text.trim(),
-          staff: taskData.selectedStaff ?? 'Unassigned',
+          staff: (taskData.selectedStaff != null && taskData.selectedStaff != '__SELECT_USER__') 
+              ? taskData.selectedStaff! 
+              : 'Unassigned',
           dueDate: taskData.dueDate!,
         );
       }).toList();
@@ -698,7 +704,7 @@ class _AddCaseScreenState extends State<AddCaseScreen> {
 
 class TaskFormData {
   final TextEditingController titleController = TextEditingController();
-  String? selectedStaff;
+  String? selectedStaff = '__SELECT_USER__';
   DateTime? dueDate;
 
   void dispose() {
