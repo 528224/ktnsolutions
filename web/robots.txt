@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ktnsolutions-51d13.firebaseapp.com/sitemap.xml

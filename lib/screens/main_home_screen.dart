@@ -3,6 +3,7 @@ import 'package:ktnsolutions/screens/recognitions/recognitions_screen.dart';
 import 'package:ktnsolutions/screens/case_management/cases_list_screen.dart';
 import 'package:ktnsolutions/screens/dashboard/dashboard_screen.dart';
 import 'package:ktnsolutions/screens/profile/profile_screen.dart';
+import 'package:ktnsolutions/screens/urgent_call/urgent_call_screen.dart';
 
 class MainHomeScreen extends StatefulWidget {
   const MainHomeScreen({super.key});
@@ -19,6 +20,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     const RecognitionsScreen(),
     const CasesListScreen(),
     const DashboardScreen(),
+    const UrgentCallScreen(),
     const HomeScreen(),
   ];
 
@@ -78,6 +80,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.analytics),
                   label: 'Reports',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.notifications_active),
+                  label: 'Urgent Calls',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.home),

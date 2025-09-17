@@ -6,3 +6,4 @@ export 'user.dart';
 export 'legal_case.dart';
 export 'court.dart';
 export 'home_details.dart';
+export 'urgent_call.dart';

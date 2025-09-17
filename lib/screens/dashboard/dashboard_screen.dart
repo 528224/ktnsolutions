@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/models.dart';
 import '../../services/case_service.dart';
 import '../../services/global_data_service.dart';
+import '../../widgets/urgent_call_bell.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -245,6 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('Dashboard'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          const UrgentCallBell(),
           IconButton(
             onPressed: _loadCases,
             icon: const Icon(Icons.refresh),
