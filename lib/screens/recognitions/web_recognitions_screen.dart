@@ -5,10 +5,8 @@ import 'package:ktnsolutions/models/home_details.dart';
 import 'package:ktnsolutions/services/recognition_service.dart';
 import 'package:ktnsolutions/services/home_details_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:characters/characters.dart';
 
 import '../../rich_text_with_multiple_color.dart';
-import '../../widgets/user_profile.dart';
 
 class WebRecognitionsScreen extends StatelessWidget {
   final RecognitionService _recognitionService = RecognitionService();

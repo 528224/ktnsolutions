@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ktnsolutions/screens/recognitions/web_recognitions_screen.dart';
 import 'package:ktnsolutions/screens/main_home_screen.dart';
-import 'package:ktnsolutions/utils/firestore_initializer.dart';
 import 'package:ktnsolutions/services/firebase_messaging_service.dart';
 import 'firebase_options.dart';
 import 'screens/auth/phone_auth_screen.dart';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 
 Future<void> main() async {
