@@ -40,10 +40,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // For web, show the recognitions screen directly without auth
-    final isWeb = identical(0, 0.0); // Platform detection for web
-    
+    // final isWeb = identical(0, 0.0); // Platform detection for web
+    final isWeb = kIsWeb;
+
     return GetMaterialApp(
-      title: 'KTM Solutions',
+      title: 'KTN Solutions',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
